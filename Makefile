@@ -8,8 +8,8 @@ DIST_DIR = $(NAME)-$(VERSION)
 DIST_TARBALL = $(DIST_DIR).tar.gz
 
 #VERBOSE := -classic-display
-OBFLAGS := $(VERBOSE) -j 10 -no-links -cflags -warn-error,FPSXY
-APPFLAGS := $(VERBOSE) -j 10
+OBFLAGS := $(VERBOSE) -j 10 -no-links -cflags -warn-error,FPSXY $(PICOPTS)
+APPFLAGS := $(VERBOSE) -j 10 $(PICOPTS)
 #OBFLAGS := $(OBFLAGS) -tag debug
 #OBFLAGS := $(OBFLAGS) -tag profile
 #OBFLAGS := $(OBFLAGS) -classic-display
@@ -274,7 +274,7 @@ credits:
 	@git log --pretty=format:'%aN        %aE' | LC_ALL=C sort -u | awk -F'\t' '{printf("\t%s <%s>\n",$$1,$$2)}';
 
 doc: all
-	$(OCAMLBUILD) -package unix scripts/pack.$(OCAMLEXT)
+	$(OCAMLBUILD) -package unix scripts/pack.$(OCAMLEXT) $(PICOPTS)
 	scripts/doc.sh $(OCAMLEXT)
 	dot -Grotate=0 -Tsvg -o dose3.docdir/index.svg dose3.docdir/index.dot
 	(cd doc && $(MAKE) all)

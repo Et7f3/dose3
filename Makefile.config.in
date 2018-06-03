@@ -64,6 +64,7 @@ endif
 
 ifeq ("@OCAMLEXT@","native")
   OCAMLBUILD=@OCAMLBUILD@
+  PICOPTS=-lflags -runtime-variant,_pic
   ifeq ("@OCAML_SYSTEM@","mingw")
     INSTALLOPTS=-s --strip-program=i686-w64-mingw32-strip
   else
@@ -79,6 +80,7 @@ ifeq ("@OCAMLEXT@","native")
   endif
 else
   OCAMLBUILD=@OCAMLBUILD@ -byte-plugin
+  PICOPTS=
   INSTALLOPTS=
 endif
 
