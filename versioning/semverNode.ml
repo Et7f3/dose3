@@ -14,7 +14,7 @@
  * and node's https://docs.npmjs.com/misc/semver.
  * *)
 
-module Pcre = Re_pcre
+module Pcre = Re.Pcre
 
 open Common
 

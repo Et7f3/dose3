@@ -230,9 +230,9 @@ let merge status packages =
   else 
     packages
 
-let installed_re = Re_pcre.regexp "[a-z]+[ \t]+[a-z]+[ \t]+installed"
+let installed_re = Re.Pcre.regexp "[a-z]+[ \t]+[a-z]+[ \t]+installed"
 let is_installed pkg = 
-  try Re_pcre.pmatch ~rex:installed_re (pkg#get_extra "Status")
+  try Re.Pcre.pmatch ~rex:installed_re (pkg#get_extra "Status")
   with Not_found -> false
 
 let is_on_hold pkg =

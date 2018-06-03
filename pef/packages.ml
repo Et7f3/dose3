@@ -12,7 +12,7 @@
 
 (** Representation of a PEF stanza. *)
 
-module Pcre = Re_pcre
+module Pcre = Re.Pcre
 open ExtLib
 open Common
 

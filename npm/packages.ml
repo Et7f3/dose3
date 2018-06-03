@@ -18,7 +18,7 @@
 open ExtLib
 open Common
 
-module Pcre = Re_pcre
+module Pcre = Re.Pcre
 
 #define __label __FILE__
 let label =  __label ;;

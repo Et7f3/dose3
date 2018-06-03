@@ -18,7 +18,7 @@ open Debian
 open DoseparseNoRpm
 open Criteria_types
 
-module Pcre = Re_pcre
+module Pcre = Re.Pcre
 
 include Util.Logging(struct let label = "apt-cudf backend" end) ;;
 

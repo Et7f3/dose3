@@ -12,7 +12,7 @@
 
 (** Apt command line parsing *)
 
-module Pcre = Re_pcre
+module Pcre = Re.Pcre
 open ExtLib
 open Common
 

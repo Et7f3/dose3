@@ -78,7 +78,7 @@ EDSP field value:
 	count(selector,field:=/plain/)
 
 While the second one understands the regular expression syntax of the OCaml
-Re_pcre module:
+Re.Pcre module:
 
 	count(selector,field:~/regex/)
 

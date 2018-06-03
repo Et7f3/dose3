@@ -13,7 +13,7 @@
 open ExtLib
 open Criteria_types
 
-module Pcre = Re_pcre
+module Pcre = Re.Pcre
 
 #define __label __FILE__
 let label =  __label ;;

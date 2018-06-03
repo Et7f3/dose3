@@ -12,7 +12,7 @@
 (*  library, see the COPYING file for more information.                   *)
 (**************************************************************************)
 
-module Pcre = Re_pcre
+module Pcre = Re.Pcre
 
 open ExtLib
 

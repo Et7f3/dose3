@@ -12,7 +12,7 @@
 
 (** Representation of a apt-get <-> solvers protocol edsp > 0.4 *)
 
-module Pcre = Re_pcre
+module Pcre = Re.Pcre
 open ExtLib
 open Common
 
