@@ -86,3 +86,4 @@ true: -traverse
 <experimental/example.*>: use_doseparse
 
 <experimental/dudftocudf/*>: use_common, use_debian, use_pef, use_csw, package(extlib), package(re.pcre), package(unix), @PKG_CUDF@, @PKG_ZIP@, @PKG_BZ2@, @PKG_CURL@, @PKG_XML@, use_doseparseNoRpm
+true: safe_string
