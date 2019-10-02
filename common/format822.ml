@@ -27,6 +27,7 @@ let dummy_loc: loc = Lexing.dummy_pos, Lexing.dummy_pos
 exception Parse_error_822 of string
 exception Syntax_error of string
 exception Type_error of string
+
 (** ParseError context list, field name * error *)
 exception ParseError of string list * string * string
 
@@ -72,7 +73,7 @@ let lexbuf_wrapper type_parser type_lexer (label,(_loc,s)) =
       raise (ParseError ([],label,msg))
 
 let string_of_loc (start_pos, end_pos) =
-  let line { Lexing.pos_lnum = l } = l in
+  let line { Lexing.pos_lnum = l ; _ } = l in
   if line start_pos = line end_pos then
     Printf.sprintf "line: %d" (line start_pos)
   else

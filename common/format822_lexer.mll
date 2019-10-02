@@ -26,8 +26,9 @@ the hyphen character, -.
 {
   open Format822_parser
 
+
   let get_range { Lexing.lex_start_p = start_pos;
-                  Lexing.lex_curr_p = end_pos } =
+                  Lexing.lex_curr_p = end_pos ; _ } =
     (start_pos, end_pos)
 
   let raise_error lexbuf c =

@@ -17,10 +17,10 @@ let uuid () =
   in
   Digest.to_hex (Digest.string (string_of_int (rand ())))
 
-(* This algorithm runs in O(n) . does not preserve ordering - 
+(* This algorithm runs in O(n) . does not preserve ordering -
    returns elements in reverse order *)
 (* XXX it would be nice to add a comparison function here... *)
-let list_unique l = 
+let list_unique l =
   let seen = Hashtbl.create (List.length l) in
   let rec add acc = function
     |hd :: tl when not (Hashtbl.mem seen hd) ->
@@ -75,38 +75,38 @@ module type Messages = sig
   val is_enabled : label -> bool
 end
 
-(** Debug messages are printed immediately on stderr. 
+(** Debug messages are printed immediately on stderr.
  * They can enabled or disabled (default) *)
 module MakeMessages(X : sig val label : string end) = struct
   type t = {
     label : string;
     mutable enabled : bool
-  } 
+  }
   let messages = Hashtbl.create 10
 
   let clean label =
-    try 
+    try
       let s = Filename.chop_extension (Filename.basename label) in
-      String.capitalize s
+      String.capitalize_ascii s
     with Invalid_argument _ -> label
 
   let create ?(enabled=false) label =
     if label = "" then begin
       Printf.eprintf "Logging Label Empty\n";
-      Pervasives.exit (64);
+      Stdlib.exit (64);
     end else if not (Hashtbl.mem messages label) then
       let t = { label = clean label ; enabled = enabled } in
       Hashtbl.add messages (clean label) t ;
       t
     else begin
       Printf.eprintf "The label (%s) %s already exists\n" X.label label;
-      Pervasives.exit (64);
+      Stdlib.exit (64);
     end
 
   let eprintf ?(raw=false) t fmt =
     Printf.ksprintf (
       if t.enabled then begin
-        (fun s -> 
+        (fun s ->
           if raw then
             Printf.eprintf "(%s)%s: %s" X.label t.label s
           else
@@ -121,7 +121,7 @@ module MakeMessages(X : sig val label : string end) = struct
       Printf.eprintf "Warning: debug label %s not found\n" s
 
   let all_enabled () = Hashtbl.iter (fun _ t -> t.enabled <- true) messages
-  let all_disabled () = Hashtbl.iter (fun k t -> t.enabled <- false) messages
+  let all_disabled () = Hashtbl.iter (fun _ t -> t.enabled <- false) messages
   let enable s = onoff s true
   let disable s = onoff s false
 
@@ -156,11 +156,11 @@ module Logging(X : sig val label : string end) = struct
   let dt = Debug.create X.label
   let debug fmt = Debug.eprintf dt fmt
 
-  let fatal fmt = 
+  let fatal fmt =
     let l = Printf.sprintf "Fatal error in module %s: " X.label in
     Printf.kprintf (fun s ->
-      Printf.eprintf "%s\n %s\n%!" l s; 
-      Pervasives.exit (64)
+      Printf.eprintf "%s\n %s\n%!" l s;
+      Stdlib.exit (64)
     ) fmt
 end
 
@@ -181,8 +181,8 @@ module Progress = struct
     mutable unbounded : bool ;
   }
 
-  let columns = 75 
-  let full = " %100.0\n" 
+  let columns = 75
+  let full = " %100.0\n"
   let rotate = "|/-\\"
   let bars = Hashtbl.create 10
 
@@ -229,7 +229,7 @@ module Progress = struct
       Buffer.add_string c.buffer c.name;
       let f = floor (1000.0 *. (float c.perc) /. (float c.total)) in
       let f = f /. 10.0 in
-      if f = 100.0 && not c.unbounded then 
+      if f = 100.0 && not c.unbounded then
         Buffer.add_string c.buffer full
       else begin
         c.rotation <- (1 + c.rotation) land 3;
@@ -265,12 +265,12 @@ module Timer = struct
     Hashtbl.iter (fun _ c -> if c.enabled then pp_timer fmt c) timers
 
   let create ?(enabled=false) s =
-    let c = { 
+    let c = {
       name = s;
       total = 0.;
       last = 0.;
       is_in = false ;
-      enabled = enabled } 
+      enabled = enabled }
     in
     Hashtbl.add timers s c;
     c
@@ -292,11 +292,13 @@ module Timer = struct
     x
 end
 
+(*
 let pp_process_time fmt () =
   let pt = Unix.times () in
   Printf.fprintf fmt "Process time (user):  %5.2f\n%!" pt.Unix.tms_utime;
   Printf.fprintf fmt "Process time (sys):   %5.2f\n%!" pt.Unix.tms_stime
 ;;
+*)
 
 module StringHashtbl = Hashtbl.Make (
   struct
@@ -309,10 +311,10 @@ module StringHashtbl = Hashtbl.Make (
 let hits = ref 0;;
 let miss = ref 0;;
 let hashcons table x =
-  try 
+  try
     let s = StringHashtbl.find table x in
     incr hits;
-    s 
+    s
   with Not_found ->
     incr miss;
     StringHashtbl.add table x x; x
@@ -357,13 +359,13 @@ let string_of_list ?(delim=("","")) ?(sep=",") string_of_item l =
     | item :: tl -> (* at least one item in tl *)
         Buffer.add_string buf (string_of_item item);
         Buffer.add_string buf sep;
-        aux tl 
+        aux tl
   in
   Buffer.add_string buf (fst delim);
   begin match l with
     | [] -> ()
     | [sole] -> Buffer.add_string buf (string_of_item sole)
-    | _ -> aux l 
+    | _ -> aux l
   end;
   Buffer.add_string buf (snd delim);
   Buffer.contents buf
@@ -393,7 +395,7 @@ class intprojection size = object
     inttovar.(counter) <- v;
     counter <- counter + 1
 
-  (** given a package id return a sat solver variable 
+  (** given a package id return a sat solver variable
       raise Not_found if the package id is not known *)
   method vartoint v = IntHashtbl.find vartoint v
 
@@ -406,7 +408,7 @@ class intprojection size = object
 end
 
 class identity = object
-  method add (v : int) =
+  method add (_ : int) =
     warning "There is no point of adding element to the identity projection"; ()
   method vartoint (v : int) = v
   method inttovar (v : int) = v

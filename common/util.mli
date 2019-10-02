@@ -31,7 +31,8 @@ type label = string
 
 module type Messages = sig
   type t
-  (** create a new message handle with label [t] . 
+
+  (** create a new message handle with label t .
    * Printing is disabled per default *)
   val create: ?enabled:bool -> label -> t
 
@@ -59,7 +60,7 @@ module type Messages = sig
   val is_enabled : label -> bool
 end
 
-(** Debug, Info and Warning messages are printed immediately on stderr. 
+(** Debug, Info and Warning messages are printed immediately on stderr.
  * Info messages are enabled per default. Debug and Warning messages
  * must be enabled explicitely *)
 module Debug : Messages
@@ -79,7 +80,7 @@ module Notice : Messages
   debug "this is a message string %s" "a string"
 
   To enable this handle, from the main program use the function
-  
+
   Debug.enable "MyModuleLabel"
 
 #define __label __FILE__
@@ -102,14 +103,14 @@ module Logging :
       val fatal : ('a, unit, string, 'b) format4 -> 'a
     end
 
-(** ProgressBars are printed immediately on stderr. 
+(** ProgressBars are printed immediately on stderr.
  * To be used, the **must** be created outside the functions where
  * they are used.
  * They can enabled or disabled (default) *)
 module Progress : sig
   type t
-    
-  (** [create "barname"] : create new a progress bar labelled "barname". 
+
+  (** [create "barname"] : create new a progress bar labelled "barname".
       The progress bar is disabled by default *)
   val create: ?enabled:bool -> ?total:int -> ?unbounded:bool -> label -> t
 
@@ -118,10 +119,10 @@ module Progress : sig
 
   (** [disable "barname"] : disable the progress bar with label "barname" *)
   val disable : label -> unit
-  
+
   (** [set_total bar 10] : set the max width of the progress bar to 10 units *)
   val set_total : t -> int -> unit
-  
+
   (** increment the progress bar of [i] units *)
   val progress : ?i:int -> t -> unit
 
@@ -132,17 +133,17 @@ module Progress : sig
   val available: unit -> label list
 end
 
-(** Timers are printed all at once by the [dump] function on stderr. 
+(** Timers are printed all at once by the [dump] function on stderr.
  * They can enabled or disabled (default) *)
 module Timer : sig
   type t
-    
+
   (** [create s] create and register a new logger named [s] *)
   val create: ?enabled:bool -> string -> t
 
   (** [enable "barname"] : enable the progress bar with label "barname" *)
   val enable : label -> unit
- 
+
   val pp_timer: Format.formatter -> t -> unit
 
   (** print all timers that are enabled *)
@@ -169,19 +170,23 @@ val miss : int ref
 val range : int -> int -> int list
 
 val string_of_list :
-  ?delim:(string * string) -> ?sep: string -> 
+  ?delim:(string * string) -> ?sep: string ->
     ('a -> string) -> 'a list -> string
 
 (** associate a sat solver variable to a package id *)
 class type projection =
   object
+
     (** add a package id to the map *)
     method add : int -> unit
-    (** given a package id return a sat solver variable 
+
+    (** given a package id return a sat solver variable
         raise Not_found if the package id is not known *)
     method inttovar : int -> int
+
     (** given a sat solver variable return a package id *)
     method vartoint : int -> int
+
     method size : int
   end
 

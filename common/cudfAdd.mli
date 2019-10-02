@@ -2,7 +2,7 @@
 (*  This file is part of a library developed with the support of the      *)
 (*  Mancoosi Project. http://www.mancoosi.org                             *)
 (*                                                                        *)
-(*  Main author(s):  Pietro Abate                                         *) 
+(*  Main author(s):  Pietro Abate                                         *)
 (*                                                                        *)
 (*  This library is free software: you can redistribute it and/or modify  *)
 (*  it under the terms of the GNU Lesser General Public License as        *)
@@ -20,7 +20,7 @@
     are equal. *)
 val equal : Cudf.package -> Cudf.package -> bool
 
-(** Compare function: compares two CUDF packages using standard CUDF 
+(** Compare function: compares two CUDF packages using standard CUDF
     comparison operator (i.e. comparing by their name and version). *)
 val compare : Cudf.package -> Cudf.package -> int
 
@@ -29,7 +29,7 @@ val compare : Cudf.package -> Cudf.package -> int
 (** A hash function for CUDF packages, using only their name and version. *)
 val hash : Cudf.package -> int
 
-(** Sort function: sorts a CUDF packages list using the 
+(** Sort function: sorts a CUDF packages list using the
     standard CUDF comparison operator in ascending order. *)
 val sort : ?asc: bool -> Cudf.package list -> Cudf.package list
 
@@ -80,10 +80,10 @@ val resolve_vpkgs_int : Cudf.universe -> Cudf_types.vpkglist -> int list
     Replaces all the "not allowed" characters
     with their ASCII code (in hexadecimal format),
     prefixed with a '%' sign.
-    
+
     Only "allowed" characters are letters, numbers and these: [@/+().-],
     all the others are replaced.
-    
+
     Examples:
     {ul
     {li [encode "ab"  = "ab"]}
@@ -122,7 +122,7 @@ val pkgnames : Cudf.universe -> StringSet.t
 (** Add a new property to the given cudf preamble *)
 val add_properties : Cudf.preamble -> Cudf_types.typedecl -> Cudf.preamble
 
-(** return the value of the requested property. 
+(** return the value of the requested property.
  * emit a warning and raise Not_found if the property does not exist *)
 val get_property : string -> Cudf.package -> string
 
@@ -145,7 +145,7 @@ val inttopkg : Cudf.universe -> int -> Cudf.package
 (*
 (** convert pef operators to cudf *)
 val cudf_op:
-  string -> [> `Eq | `Neq | `Geq | `Gt | `Leq | `Lt ] 
+  string -> [> `Eq | `Neq | `Geq | `Gt | `Leq | `Lt ]
 
 (** convert pef constraints to cudf *)
 val cudf_constr:
@@ -185,7 +185,7 @@ type pp = Cudf.package -> string * string option * string * (string * (string * 
     [from_cudf] a function that gets a (name,cudfversion) pair and returns a (name,realversion).
     [?fields] additional fields to print.
     [?decode] a function that decode the package name and version.
-    
+
     returns : a pair (name,versiom,property list)
 
     note that if the package has version less then 0, then the version is printed
@@ -196,8 +196,8 @@ val pp :
   ?fields: string list->
   ?decode: (Cudf_types.pkgname -> string) -> pp
 
-(** [default_pp] default package printer. Extracts string values from a 
-    cudf package : Name, Version, Fields. Where Fields is a list of 
+(** [default_pp] default package printer. Extracts string values from a
+    cudf package : Name, Version, Fields. Where Fields is a list of
     field name , value pairs . If the version of the package is
     a negative number, the version version if printed as "nan". *)
 val default_pp : pp

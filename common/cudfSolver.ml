@@ -21,7 +21,7 @@ let label =  __label ;;
 include Util.Logging(struct let label = label end) ;;
 
 (* FIXME: unify with deb/apt.ml *)
-let blank_regexp = Pcre.regexp "[ \t]+" ;;
+(* let blank_regexp = Pcre.regexp "[ \t]+" ;; *)
 
 let check_fail file =
   let ic = open_in file in
@@ -54,7 +54,7 @@ let rmtmpdir path =
   begin try
     Sys.remove (Filename.concat path "in-cudf");
     Sys.remove (Filename.concat path "out-cudf")
-  with e -> warning "Cannot remove %s/{in-cudf,out-cudf}" path end;
+  with _e -> warning "Cannot remove %s/{in-cudf,out-cudf}" path end;
   begin try
     Unix.rmdir path
   with e ->
@@ -162,7 +162,7 @@ let close_process (inchan, outchan, errchan,pid) =
     cudf : a cudf document (preamble, universe, request)
     criteria : optimization criteria
 *)
-let execsolver exec_pat criteria cudf = 
+let execsolver exec_pat criteria cudf =
   let (_,universe,_) = cudf in
 
   let tmpdir = mktmpdir "tmp.apt-cudf." "" in
@@ -209,7 +209,7 @@ let execsolver exec_pat criteria cudf =
       raise_error "(CRASH) Solution file not found"
     else if check_fail solver_out then
       raise Unsat
-    else 
+    else
       try begin
         try Cudf_parser.load_solution_from_file solver_out universe with
         |Cudf_parser.Parse_error _

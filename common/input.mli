@@ -12,8 +12,6 @@
 
 (** Input routines *)
 
-open ExtLib
-
 #ifdef HASZIP
 (** load a file in gzip format
     @return ExtLib.IO.input channel *)
@@ -26,7 +24,7 @@ val gzip_open_file : string -> IO.input
 val bzip_open_file : string -> IO.input
 #endif
 
-(** load a non compressed file  
+(** load a non compressed file
     @return ExtLib.IO.input channel *)
 val std_open_file : string -> IO.input
 

@@ -42,15 +42,15 @@ module type T = sig
   val lit_of_var : var -> bool -> lit
 
   (** initialize the solver [initialize_problem n]
-     
-      @param print_var a function to print a variable 
+
+      @param print_var a function to print a variable
       @param buffer decide weather or not to store a human readable
       representaion of the sat problem.
       @param n the size of the sat problem. that is the max number of
       variables to consider
   *)
   val initialize_problem :
-    ?print_var:(Format.formatter -> int -> unit) -> 
+    ?print_var:(Format.formatter -> int -> unit) ->
       ?buffer: bool -> int -> state
 
   (** provide a deep copy of the current state of the solver *)
@@ -78,7 +78,8 @@ module type T = sig
   val associate_vars : state -> lit -> var list -> unit
 
   val solve_all : (state -> unit) -> state -> var -> bool
-  (** [solve st v] finds a variable assignment that makes [v] [True] *)
+
+  (** [solve st v] finds a variable assignment that makes v True *)
   val solve : state -> var -> bool
 
   (** [solve st l] finds a variable assignment that makes [True] all variables in [l]*)
@@ -86,11 +87,11 @@ module type T = sig
 
   (** in case of failure return the list of associated reasons *)
   val collect_reasons : state -> var -> X.reason list
-  
+
   (** in case of failure return the list of associated reasons *)
   val collect_reasons_lst : state -> var list -> X.reason list
 
-  (** if the solver was initialized with [buffer = true], 
+  (** if the solver was initialized with [buffer = true],
       dump the state of the solver. Return an empty list otherwise *)
   val dump : state -> (int * bool) list list
 

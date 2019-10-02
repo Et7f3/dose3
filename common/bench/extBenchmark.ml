@@ -42,7 +42,7 @@ let pp_header widths fmt header =
   ) first_row
 
 let pp_row pp_cell fmt row =
-  Array.iteri (fun j cell ->
+  Array.iteri (fun _j cell ->
     Format.pp_print_tab fmt ();
     Format.fprintf fmt "%a" pp_cell cell
   ) row
@@ -85,7 +85,7 @@ let parse_test s =
     )
   in
   let ex n s = float_of_string (Str.matched_group n s) in
-  if Str.string_match s_re s 0 then 
+  if Str.string_match s_re s 0 then
       { Benchmark.wall = ex 1 s;
         utime = ex 2 s;
         stime = ex 3 s;
@@ -162,9 +162,9 @@ let parse_benchmarks ?(days=7) ?(dirname=".benchmarks") () =
 module StringSet = Set.Make(String)
 
 let pp_benchmarks fmt data =
-  if List.length data = 0 then 
+  if List.length data = 0 then
     Format.fprintf fmt "Sample Set empty, nothing to print"
-  else begin 
+  else begin
     let error = 0.001 in
     let fa =
       Array.of_list (
@@ -188,17 +188,17 @@ let pp_benchmarks fmt data =
       let i = data_size - i -1 in
       t.(i).(0) <- string_of_date ut;
       for j = 0 to func_size-1 do
-        let avg = 
+        let avg =
           try
             match Hashtbl.find h fa.(j) with
             |[] -> "n/a"
             |h::_ -> begin
               (* XXX : I should only compare up to 3 decimal digits *)
                 let a = h.Benchmark.utime /. Int64.to_float(h.Benchmark.iters) in
-                let res = 
+                let res =
                   if diff last.(j) a && last.(j) > 0. && a > last.(j) then
                     Printf.sprintf "%.03f(*)" a
-                  else 
+                  else
                     Printf.sprintf "%.03f" a
                 in
                 if a < last.(j) then last.(j) <- a;
@@ -219,6 +219,7 @@ let make_benchmark l =
   (Unix.time(),h)
 
 module Options = struct
+
   open OptParse
 
   let verbose = StdOpt.incr_option ()
@@ -228,12 +229,16 @@ module Options = struct
 
 
   let description = ""
-  let options = OptParser.make ~description:description ()
+  let options = OptParser.make ~description:description () ;;
 
-  open OptParser
+  let open OptParser in
+
   add options ~short_name:'v' ~help:"Print information (can be repeated)" verbose;
+
   add options ~short_name:'r' ~long_name:"run" ~help:"run all tests" run;
+
   add options ~long_name:"nosave" ~help:"not save test results" save;
+
   add options ~long_name:"noshow" ~help:"not show test results" show;
 end
 
@@ -251,5 +256,4 @@ let main run =
   if OptParse.Opt.get Options.show then
     let l = parse_benchmarks () in
     Format.printf "%a@." pp_benchmarks l
-;;
 

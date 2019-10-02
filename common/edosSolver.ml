@@ -24,7 +24,7 @@ module type T = sig
   type lit
   val lit_of_var : var -> bool -> lit
   val initialize_problem :
-    ?print_var:(Format.formatter -> int -> unit) -> 
+    ?print_var:(Format.formatter -> int -> unit) ->
       ?buffer: bool -> int -> state
   val copy : state -> state
   val propagate : state -> unit
@@ -49,7 +49,7 @@ end
 let label =  __label ;;
 include Util.Logging(struct let label = label end) ;;
 
-module IntHash = 
+module IntHash =
   Hashtbl.Make (struct
     type t = int
     let equal = (=)
@@ -64,7 +64,7 @@ let (@) l1 l2 =
     |_::_,[] -> true
     |[],_::_ -> false
     |_::r1,_::r2 -> geq (r1,r2)
-  in 
+  in
   if geq (l1,l2) then List.append l2 l1 else List.append l1 l2
 
 module M (X : S) = struct
@@ -181,9 +181,9 @@ module M (X : S) = struct
     }
 
   (****)
- 
+
   let charge st x = st.st_cost <- st.st_cost + x
-  let get_bill st = st.st_cost
+  (* let get_bill st = st.st_cost *)
 
   (****)
 
@@ -196,9 +196,11 @@ module M (X : S) = struct
     pin_var st x;
     Queue.push x st.st_var_queue
 
+    (*
   let requeue_var st x =
     pin_var st x;
     st.st_var_queue_head <- x :: st.st_var_queue_head
+*)
 
   (* Returns -1 if no variable remains *)
   let rec dequeue_var st =
@@ -256,13 +258,13 @@ module M (X : S) = struct
   (****)
 
   let store st r =
-    let clause = 
+    let clause =
       Array.fold_left (fun acc p ->
          if pol_of_lit p then
             (var_of_lit p, true)::acc
          else
             (var_of_lit p, false)::acc
-      ) [] r.lits 
+      ) [] r.lits
     in
     st.st_buffer <- (clause::st.st_buffer)
 
@@ -521,11 +523,12 @@ module M (X : S) = struct
     end;
     enqueue st learnt.(0) (Some rule);
     st.st_cur_level > st.st_min_level && f st
-
+(*
   let val_of = function
     |True -> true
-    |False -> false 
-    |Unknown -> assert false 
+    |False -> false
+    |Unknown -> assert false
+*)
 
   (* find all solutions *)
   let rec solve_all_rec callback st =
@@ -534,13 +537,13 @@ module M (X : S) = struct
         let x = dequeue_var st in
         if x < 0 then begin
           (* we do something with the solution that we just found *)
-          callback st ; 
+          callback st ;
           if st.st_cur_level = 0 then begin
             (* we exhausted the search space *)
-            if !debug then Format.eprintf "Search Completed.@."; 
+            if !debug then Format.eprintf "Search Completed.@.";
             true
           end else begin
-            if !debug then Format.eprintf "Solution found.@."; 
+            if !debug then Format.eprintf "Solution found.@.";
             (* we remove this solution from the search space and backjump *)
             let assignment =
               (* XXX : I should keep trace of this list incrementally *)
@@ -591,7 +594,7 @@ module M (X : S) = struct
         backjump solve_rec st r
 
   let rec solve_aux ?callback st x =
-    let s = 
+    let s =
       if Option.is_none callback then
         solve_rec
       else
@@ -634,7 +637,7 @@ module M (X : S) = struct
   let debug b = debug := b
   let set_buffer b = buffer := b
 
-  let initialize_problem 
+  let initialize_problem
     ?(print_var = (fun fmt -> Format.fprintf fmt "%d")) ?(buffer=false) n =
       if buffer then set_buffer true;
       (* Remove Gc settings for the moment as they are not adapted to small
@@ -652,7 +655,7 @@ module M (X : S) = struct
         st_seen_var = Array.make n (-1);
         st_refs = Array.make n 0;
         st_pinned = Array.make n false;
-        (* to each literal, positive or negative, 
+        (* to each literal, positive or negative,
          * we associate the list of rules where it appears *)
         st_simpl_prop = Array.make (2 * n) LitMap.empty;
         st_watched = Array.make (2 * n) [];
@@ -743,7 +746,7 @@ module M (X : S) = struct
 
   let stats st =
     let (t,f,u) =
-      Array.fold_left(fun (t,f,u) -> function 
+      Array.fold_left(fun (t,f,u) -> function
         |True -> (t+1,f,u) | False -> (t,f+1,u) | Unknown -> (t,f,u+1)
       ) (0,0,0) st.st_assign
     in

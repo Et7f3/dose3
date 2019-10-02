@@ -514,9 +514,9 @@ let main () =
           Cudf_printer.pp_universe stdout u;
           Printf.fprintf stdout "\n";
           Cudf_printer.pp_request stdout r;
-          match Mccs.resolve_cudf ~verbose:true "-removed,-changed" (pre,u,r) with
-          |None -> Algo.Depsolver.Unsat None
-          |Some(p,s) -> Algo.Depsolver.Sat(Some p,s)
+          (* match Mccs.resolve_cudf ~verbose:false "-removed,-changed" (pre,u,r) with
+          |None -> *) Algo.Depsolver.Unsat None
+          (* |Some(p,s) -> Algo.Depsolver.Sat(Some p,s) *)
         end
         #else
           raise Not_found

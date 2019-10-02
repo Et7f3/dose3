@@ -140,7 +140,7 @@ def diff_text(expectedfile,resultfile):
 
 def diff_edsp(expectedfile,resultfile):
     return diff_aux(expectedfile,resultfile,parseedsp)
-    
+
 def test_application(self,expected_file,cmd,diff,exitcode):
     uid = uuid.uuid1()
     mytmp = False
@@ -169,10 +169,10 @@ def test_application(self,expected_file,cmd,diff,exitcode):
 class DoseTests(unittest.TestCase):
     def __init__(self, test):
         super(DoseTests, self).__init__()
-        self.name = test['Name'] 
+        self.name = test['Name']
         self.group = test['Group']
         self.comment = test['Comment'] if 'Comment' in test else None
-        self.expected = test['Expected'] 
+        self.expected = test['Expected']
         self.cmd = test['Cmd'].split(' ') + test['Input'].split(' ')
         self.exitcode = int(test['ExitCode']) if 'ExitCode' in test else None
         self.enctype = test['Type'] if 'Type' in test else '822'
@@ -194,7 +194,7 @@ class DoseTests(unittest.TestCase):
             s =     "Test : %s" % self.name
             s = s + "\nGroup : %s" % self.group
             s = s + "\n" + "Cmd : " + " ".join(self.cmd)
-            if self.solver : 
+            if self.solver :
                 s = s + "\n" + "Solver : " + self.solver
             s = s + "\nExpected file : %s" % self.expected
             s = s + "\nExpected exitcode : %d" % self.exitcode if self.exitcode is not None else s
@@ -211,7 +211,7 @@ def suite(f,runtest,rungroup,slow=False):
     groupFound=False
     testFound=False
     def addtest(s) :
-        # we run the slow tests only if 
+        # we run the slow tests only if
         if (slow and 'Speed' in s and s['Speed'] == 'slow') :
             return
         else :
@@ -244,7 +244,7 @@ def suite(f,runtest,rungroup,slow=False):
             groupFound=True
             addtest(s)
     if len(runtest) != 0 and testFound == False :
-        print "Test(s) [%s] Not found" % (','.join(str(p) for p in runtest)) 
+        print "Test(s) [%s] Not found" % (','.join(str(p) for p in runtest))
         print "Tests available [%s]" % (','.join(str(p) for p in tests))
     if len(rungroup) != 0 and groupFound == False :
         print "Group(s) [%s] Not found" % (','.join(str(p) for p in rungroup))
@@ -261,10 +261,10 @@ def fixtest(expected_file,cmd):
 def main():
     parser = argparse.ArgumentParser(description='Unit test for Dose applications')
     parser.add_argument('-d', '--diff', action='store_true', default=False, help="Print diffs")
-    parser.add_argument('-s', '--slow', action='store_true', default=False, help="Run slow tests") 
-    parser.add_argument('--runtest', nargs=1, default=[]) 
-    parser.add_argument('--rungroup', nargs=1, default=[]) 
-    parser.add_argument('--fixtest', nargs=1, default=[]) 
+    parser.add_argument('-s', '--slow', action='store_true', default=False, help="Run slow tests")
+    parser.add_argument('--runtest', nargs=1, default=[])
+    parser.add_argument('--rungroup', nargs=1, default=[])
+    parser.add_argument('--fixtest', nargs=1, default=[])
     parser.add_argument('inputfile', type=str, nargs=1, help="test file")
     args = parser.parse_args()
 

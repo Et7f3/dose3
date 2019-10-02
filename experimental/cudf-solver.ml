@@ -107,6 +107,7 @@ let main () =
         |_ ->  fatal "Not a void cudf document (missing request)"
       in 
       let r = 
+      (*
         if OptParse.Opt.get Options.critparanoid then 
           Depsolver.check_request ~callback:pp_solution_callback ~criteria:"-count(removed),-count(new)" (p,l,r) 
         else if OptParse.Opt.get Options.critrem then 
@@ -117,6 +118,10 @@ let main () =
           Depsolver.check_request ~callback:pp_solution_callback ~criteria:"-count(changed)" (p,l,r) 
         else
           Depsolver.check_request (p,l,r) 
+*)
+          match Mccs.resolve_cudf ~verbose:false "-removed,-changed" (p,l,r) with
+          |None -> Algo.Depsolver.Unsat None
+          |Some(p,s) -> Algo.Depsolver.Sat(Some p,s)
       in
       begin match r with
       |Algo.Depsolver.Error s ->

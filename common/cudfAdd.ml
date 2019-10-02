@@ -65,7 +65,7 @@ module DecodingHashtable =
 (*  "hex_char char" returns the ASCII code of the given character
     in the hexadecimal form, prefixed with the '%' sign.
     e.g. hex_char '+' = "%2b" *)
-let hex_char char = Printf.sprintf "%%%02x" (Char.code char);;
+(* let hex_char char = Printf.sprintf "%%%02x" (Char.code char);; *)
 
 (* "init_hashtables" initializes the two given hashtables to contain:
 
@@ -74,7 +74,7 @@ let hex_char char = Printf.sprintf "%%%02x" (Char.code char);;
     e.g. EncodingHashtable.find enc_ht "+" = "%2b"
 
     - dec_ht: An inversion of enc_ht.
-    e.g. DecodingHashtable.find dec_ht "%2b" = "+" 
+    e.g. DecodingHashtable.find dec_ht "%2b" = "+"
 *)
 let init_hashtables enc_ht dec_ht =
   let n = ref 255 in
@@ -194,11 +194,13 @@ let pkgnames universe =
     StringSet.add pkg.Cudf.package names
   ) StringSet.empty universe
 
+  (*
 let pkgnames_ universe =
   let h = Hashtbl.create (Cudf.universe_size universe) in
   Cudf.iter_packages (fun pkg ->
     add_to_package_list h pkg.Cudf.package pkg
   ) universe
+*)
 
 let add_properties preamble l =
   List.fold_left (fun pre prop ->
@@ -226,7 +228,7 @@ let realversionmap pkglist =
 let pkgtoint universe p =
   try Cudf.uid_by_package universe p
   with Not_found-> begin
-    warning 
+    warning
     "package %s is not associate with an integer in the given universe"
     (string_of_package p);
     raise Not_found
@@ -234,17 +236,17 @@ let pkgtoint universe p =
 
 let inttopkg = Cudf.package_by_uid
 
-let normalize_set (l : int list) = 
+let normalize_set (l : int list) =
   List.rev (List.fold_left (fun results x ->
     if List.mem x results then results
     else x::results) [] l
   )
 
 (* vpkg -> pkg list *)
-let who_provides univ (pkgname,constr) = 
+let who_provides univ (pkgname,constr) =
   let pkgl = Cudf.lookup_packages ~filter:constr univ pkgname in
   let prol = Cudf.who_provides ~installed:false univ (pkgname,constr) in
-  let filter = function 
+  let filter = function
     |(p,None) -> Some p
     |(p,Some v) when Cudf.version_matches v constr -> Some p
     |_ -> None
@@ -264,12 +266,12 @@ let resolve_deps univ vpkgs =
   List.map (Cudf.package_by_uid univ) (resolve_vpkgs_int univ vpkgs)
 
 (* pkg -> pkg list list *)
-let who_depends univ pkg = 
+let who_depends univ pkg =
   List.map (resolve_deps univ) pkg.Cudf.depends
 
 type ctable = (int, int list ref) ExtLib.Hashtbl.t
 
-let who_conflicts conflicts_packages univ pkg = 
+let who_conflicts conflicts_packages univ pkg =
   if (Hashtbl.length conflicts_packages) = 0 then
     debug "Either there are no conflicting packages in the universe or you
 CudfAdd.init_conflicts was not invoked before calling CudfAdd.who_conflicts";
@@ -293,7 +295,7 @@ let init_conflicts univ =
   conflicts_packages
 
 (* here we assume that the id given by cudf is a sequential and dense *)
-let compute_pool universe = 
+let compute_pool universe =
   let size = Cudf.universe_size universe in
   let conflicts = init_conflicts universe in
   let c = Array.init size (fun i -> get_package_list conflicts i) in
@@ -305,6 +307,7 @@ let compute_pool universe =
   in
   (d,c)
 
+  (*
 let cudf_op = function
   |("<<" | "<") -> `Lt
   |(">>" | ">") -> `Gt
@@ -318,6 +321,7 @@ let cudf_constr = function
   |None -> None
   |Some("ALL",_) -> None
   |Some(c,v) -> Some(cudf_op c,v)
+*)
 
 let latest ?(n=1) pkglist =
   let h = Hashtbl.create (List.length pkglist) in
