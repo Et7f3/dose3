@@ -15,7 +15,7 @@
 (*                                                                            *)
 (******************************************************************************)
 
-open Common
+open Dose_common
 module Pcre = Re_pcre
 
 #define __label __FILE__

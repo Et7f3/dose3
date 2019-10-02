@@ -1,5 +1,5 @@
 [submodule "cudf"]
-  path = cudf
+	path = vendors/cudf
   url = https://gforge.inria.fr/git/cudf/cudf.git
 [submodule "tests"]
   path = tests

@@ -10,13 +10,13 @@
 (*  library, see the COPYING file for more information.                               *)
 (**************************************************************************************)
 
-(** this functions follow the semantic versioning specification http://semver.org/ 
+(** this functions follow the semantic versioning specification http://semver.org/
  * and node's https://docs.npmjs.com/misc/semver.
  * *)
 
 module Pcre = Re_pcre
 
-open Common
+open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
@@ -33,7 +33,7 @@ type version = {
 }
 
 let compose_raw (major,minor,patch,pre,build) =
-  let str = 
+  let str =
     match (major,minor,patch) with
     |"","","" -> Printf.sprintf "*"
     |_,"","" -> Printf.sprintf "%s" major
@@ -48,7 +48,7 @@ let compose_raw (major,minor,patch,pre,build) =
   |[],l -> Printf.sprintf "%s+%s" str (str_build l)
   |lp,lb -> Printf.sprintf "%s-%s+%s" str (str_pre lp) (str_build lb)
 
-let convert ((major,minor,patch,pre,build) as raw) = 
+let convert ((major,minor,patch,pre,build) as raw) =
   (* if x = "" then this is intepreted as a partial version and converted to 0 *)
   let c_int = function
     |"" -> 0
@@ -92,9 +92,9 @@ let sep_re = Pcre.regexp "\\."
 
 let parse_raw_version version =
   try
-    let parsed = Pcre.extract rex version in
-    let pre   = Pcre.split sep_re parsed.(6) in
-    let build = Pcre.split sep_re parsed.(7) in
+    let parsed = Pcre.extract ~rex version in
+    let pre   = Pcre.split ~rex:sep_re parsed.(6) in
+    let build = Pcre.split ~rex:sep_re parsed.(7) in
     (parsed.(1),parsed.(3),parsed.(5),pre,build)
   with Not_found ->
     raise (Invalid_argument (Printf.sprintf "%s: Parsing Error. Invalid Version" version))
@@ -108,7 +108,7 @@ let parse_version version =
 
 (*Compare  two elements of the prerelease part of a version*)
 let compare_pre = function
-  | (N x1, N y1) -> Pervasives.compare x1 y1
+  | (N x1, N y1) -> Stdlib.compare x1 y1
   | (S _, N _)   -> 1
   | (N _, S _)   -> -1
   | (S s1, S s2) -> String.compare s1 s2
@@ -126,22 +126,22 @@ let compare_pre (l1,l2) =
   else
     let rec check acc = function
       |[],[] -> acc
-      |(x1::l1,x2::[]) when l1 <> [] -> 1
-      |(x1::[],x2::l2) when l2 <> [] -> -1
-      |(x1::l1,x2::l2) when x1 = x2 -> check 0 (l1,l2) 
+      |(_::l1,_::[]) when l1 <> [] -> 1
+      |(_::[],_::l2) when l2 <> [] -> -1
+      |(x1::l1,x2::l2) when x1 = x2 -> check 0 (l1,l2)
       |(x1::_,x2::_) -> compare_pre (x1,x2)
       |_,_ -> assert false
     in check 0 (l1,l2)
 
 let compare_version x y =
   let res x = if x = 0 then 0 else if x < 0 then -1 else 1 in
-  let c1 = Pervasives.compare x.major y.major in
+  let c1 = Stdlib.compare x.major y.major in
   if c1 <> 0 then res c1
   else
-    let c2 = Pervasives.compare x.minor y.minor in
+    let c2 = Stdlib.compare x.minor y.minor in
     if c2 <> 0 then res c2
   else
-    let c3 = Pervasives.compare x.patch y.patch in
+    let c3 = Stdlib.compare x.patch y.patch in
     if c3 <> 0 then res c3
   else
     compare_pre (x.pre,y.pre)
