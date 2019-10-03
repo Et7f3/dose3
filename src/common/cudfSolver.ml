@@ -18,7 +18,7 @@ open ExtLib
 
 #define __label __FILE__
 let label =  __label ;;
-include Util.Logging(struct let label = label end) ;;
+include Util.Logging(struct let label = "dose_common.cudfSolver" end) ;;
 
 (* FIXME: unify with deb/apt.ml *)
 (* let blank_regexp = Pcre.regexp "[ \t]+" ;; *)

@@ -22,7 +22,7 @@ open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
-include Util.Logging(struct let label = label end) ;;
+include Util.Logging(struct let label = "dose_deb.packages" end) ;;
 
 let parse_multiarch (label,(_,s)) = match s with
   |("None"|"none"|"No"|"no") -> `No

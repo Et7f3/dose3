@@ -14,7 +14,7 @@ open ExtLib
 
 #define __label __FILE__
 let label =  __label ;;
-include Util.Logging(struct let label = label end) ;;
+include Util.Logging(struct let label = "dose_common.format822" end) ;;
 
 type loc = Lexing.position * Lexing.position
 type value = (loc * string)

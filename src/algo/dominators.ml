@@ -24,7 +24,7 @@ let domtrtimer = Util.Timer.create "Algo.Dominators.dom_transitive_reduction"
 
 #define __label __FILE__
 let label =  __label ;;
-include Util.Logging(struct let label = label end) ;;
+include Util.Logging(struct let label = "dose_algo.dominators" end) ;;
 
 module G = Defaultgraphs.PackageGraph.G
 module O = Defaultgraphs.GraphOper(G)

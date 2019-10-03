@@ -40,7 +40,7 @@ end
 
 #define __label __FILE__
 let label =  __label ;;
-include Util.Logging(struct let label = label end) ;;
+include Util.Logging(struct let label = "dose_applications.strong-deps" end) ;;
 
 module G = Defaultgraphs.PackageGraph.G
 module O = Defaultgraphs.GraphOper(G)

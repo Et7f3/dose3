@@ -19,7 +19,7 @@ open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
-include Util.Logging(struct let label = label end) ;;
+include Util.Logging(struct let label = "dose_algo.defaultgraphs" end) ;;
 
 let tr_timer = Util.Timer.create "Defaultgraph.GraphOper.transitive_reduction"
 let trbar = Util.Progress.create "Defaultgraph.GraphOper.transitive_reduction"

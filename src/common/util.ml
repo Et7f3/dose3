@@ -166,7 +166,7 @@ end
 
 #define __label __FILE__
 let label =  __label ;;
-include Logging(struct let label = label end) ;;
+include Logging(struct let label = "dose_common.util" end) ;;
 
 (** Printf bars are printed immediately on stderr.
  * they can be enabled or disabled (default) *)

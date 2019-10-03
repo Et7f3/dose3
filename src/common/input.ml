@@ -14,7 +14,7 @@ open ExtLib
 
 #define __label __FILE__
 let label =  __label ;;
-include Util.Logging(struct let label = label end) ;;
+include Util.Logging(struct let label = "dose_common.input" end) ;;
 
 [@@@warning "-27"]
 let gzip_open_file file =

@@ -18,7 +18,7 @@ open Dose_doseparse
 
 #define __label __FILE__
 let label =  __label ;;
-include Util.Logging(struct let label = label end) ;;
+include Util.Logging(struct let label = "dose_applications.ceve" end) ;;
 
 module DGraph = Defaultgraphs.SyntacticDependencyGraph
 module PGraph = Defaultgraphs.PackageGraph

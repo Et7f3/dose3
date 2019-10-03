@@ -44,7 +44,7 @@ end
 
 #define __label __FILE__
 let label =  __label ;;
-include Util.Logging(struct let label = label end) ;;
+include Util.Logging(struct let label = "dose_applications.outdated" end) ;;
 
 let sync (sn,sv,v) p =
   let cn = CudfAdd.encode ("src/"^sn^"/"^sv) in

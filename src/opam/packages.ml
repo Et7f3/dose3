@@ -20,7 +20,7 @@ open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
-include Util.Logging(struct let label = label end) ;;
+include Util.Logging(struct let label = "dose_opam.packages" end) ;;
 
 type options =
   Dose_pef.Packages_types.architecture * Dose_pef.Packages_types.architecture list *

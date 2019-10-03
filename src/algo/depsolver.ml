@@ -16,7 +16,7 @@ open CudfAdd
 
 #define __label __FILE__
 let label =  __label ;;
-include Util.Logging(struct let label = label end) ;;
+include Util.Logging(struct let label = "dose_algo.depsolver" end) ;;
 
 type solver = Depsolver_int.solver
 let timer_solver = Util.Timer.create "Algo.Depsolver.solver"
