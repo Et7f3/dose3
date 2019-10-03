@@ -13,12 +13,12 @@
 (**************************************************************************)
 
 open ExtLib
-open Common
+open Dose_common
 
 let vpkg_option ?default ?(metavar = " <vpkg>") () =
   let parse_vpkg s =
     let _loc = Format822.dummy_loc in
-    Pef.Packages.parse_vpkg ("cmdline <vpkg>", (_loc, s))
+    Dose_pef.Packages.parse_vpkg ("cmdline <vpkg>", (_loc, s))
   in
   OptParse.Opt.value_option metavar default parse_vpkg (fun _ s ->
       Printf.sprintf "invalid vpackage '%s'" s)
@@ -27,7 +27,7 @@ let vpkg_option ?default ?(metavar = " <vpkg>") () =
 let vpkglist_option ?default ?(metavar = " <vpkglst>") () =
   let parse_vpkglist s =
     let _loc = Format822.dummy_loc in
-    Pef.Packages.parse_vpkglist ("cmdline <vpkglst>", (_loc, s))
+    Dose_pef.Packages.parse_vpkglist ("cmdline <vpkglst>", (_loc, s))
   in
   OptParse.Opt.value_option metavar default parse_vpkglist (fun _ s ->
       Printf.sprintf "invalid vpackage list '%s'" s)
@@ -40,20 +40,22 @@ let pkglist_option ?default ?(metavar = " <pkglst>") () =
       (function
         | ((n, a), Some ("=", v)) ->
             (n, a, v)
-        | ((n, a), None) ->
+        | ((_, _), None) ->
             raise (Format822.ParseError ([], s, "you must specify a version"))
         | _ ->
             raise (Format822.ParseError ([], s, "")))
-      (Pef.Packages.parse_vpkglist ("cmdline <pkglst>", (_loc, s)))
+      (Dose_pef.Packages.parse_vpkglist ("cmdline <pkglst>", (_loc, s)))
   in
   OptParse.Opt.value_option metavar default parse_vpkglist (fun _ s ->
       Printf.sprintf "invalid package list '%s'" s)
 
 let pkglist tables universe vpkglist =
-  let to_cudf (p, v) = (p, Debian.Debcudf.get_cudf_version tables (p, v)) in
+  let to_cudf (p, v) =
+    (p, Dose_debian.Debcudf.get_cudf_version tables (p, v))
+  in
   List.flatten
     (List.map
        (fun ((n, a), c) ->
-         let (name, filter) = Pef.Pefcudf.pefvpkg to_cudf ((n, a), c) in
+         let (name, filter) = Dose_pef.Pefcudf.pefvpkg to_cudf ((n, a), c) in
          Cudf.lookup_packages ~filter universe name)
        vpkglist)

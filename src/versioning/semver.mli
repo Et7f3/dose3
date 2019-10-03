@@ -1,4 +1,3 @@
-
 (** Compare two versions in the strings using a strict semantic versioning
  * parser*)
 val compare : string -> string -> int

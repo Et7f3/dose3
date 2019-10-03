@@ -13,7 +13,7 @@
 (**************************************************************************)
 
 open ExtLib
-open Common
+open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
@@ -26,12 +26,12 @@ let deb_load_source_timer = Util.Timer.create "Load.DebianSource" ;;
 (* a list of the raw package types for all input except Cudf itself *)
 (* currently, only Deb and DebSrc are used *)
 type rawpackage =
-  |Deb of Debian.Packages.package
-  |DebSrc of Debian.Sources.source
-  |Pef of Pef.Packages.package
-  |Opam of Opam.Packages.package
-  |Npm of Npm.Packages.package
-  |Edsp of Debian.Packages.package
+  |Deb of Dose_debian.Packages.package
+  |DebSrc of Dose_debian.Sources.source
+  |Pef of Dose_pef.Packages.package
+  |Opam of Dose_opam.Packages.package
+  |Npm of Dose_npm.Packages.package
+  |Edsp of Dose_debian.Packages.package
   |Csw of Csw.Packages.package
 #ifdef HASRPM
   |Rpm of Rpm.Packages.package
@@ -40,42 +40,42 @@ type rawpackage =
 
 (** read a debian Packages file - compressed or not *)
 let read_deb ?filter ?(extras=[]) fname =
-  Debian.Packages.input_raw ?filter ~extras [fname]
+  Dose_debian.Packages.input_raw ?filter ~extras [fname]
 
 (* fll = file list list
- * dll = deb packages list list 
+ * dll = deb packages list list
  * cll = cudf package list list
  *)
 let deb_load_list options ?(status=[]) ?(raw=false) dll =
   Util.Timer.start deb_load_list_timer;
-  let noindep = options.Debian.Debcudf.drop_bd_indep in
-  let noarch = options.Debian.Debcudf.drop_bd_arch in
-  let profiles = options.Debian.Debcudf.profiles in
+  let noindep = options.Dose_debian.Debcudf.drop_bd_indep in
+  let noarch = options.Dose_debian.Debcudf.drop_bd_arch in
+  let profiles = options.Dose_debian.Debcudf.profiles in
   let pkgll = List.map (List.map (function
       | Deb p -> p
       | DebSrc p ->
-          if Option.is_none options.Debian.Debcudf.native then
+          if Option.is_none options.Dose_debian.Debcudf.native then
             fatal "--deb-native-arch was not specified while treating Debian Sources File";
-        let buildarch = Option.get options.Debian.Debcudf.native in
-        let hostarch = Option.get options.Debian.Debcudf.host in
-        Debian.Sources.src2pkg ~noindep ~noarch ~profiles buildarch hostarch p
+        let buildarch = Option.get options.Dose_debian.Debcudf.native in
+        let hostarch = Option.get options.Dose_debian.Debcudf.host in
+        Dose_debian.Sources.src2pkg ~noindep ~noarch ~profiles buildarch hostarch p
       | _ -> fatal "cannot handle input"
-    )) dll 
+    )) dll
   in
   let pkgl = List.flatten pkgll in
-  let pkgl = if status = [] then pkgl else Debian.Packages.merge status pkgl in
-  let tables = Debian.Debcudf.init_tables ~options pkgl in
-  let from_cudf (p,i) = Debian.Debcudf.get_real_version tables (p,i) in
-  let to_cudf (p,v) = (p,Debian.Debcudf.get_cudf_version tables (p,v)) in
-  let cll = 
+  let pkgl = if status = [] then pkgl else Dose_debian.Packages.merge status pkgl in
+  let tables = Dose_debian.Debcudf.init_tables ~options pkgl in
+  let from_cudf (p,i) = Dose_debian.Debcudf.get_real_version tables (p,i) in
+  let to_cudf (p,v) = (p,Dose_debian.Debcudf.get_cudf_version tables (p,v)) in
+  let cll =
     List.map (fun l ->
-      List.map (Debian.Debcudf.tocudf tables ~options) (Debian.Packages.merge status l)
+      List.map (Dose_debian.Debcudf.tocudf tables ~options) (Dose_debian.Packages.merge status l)
     ) pkgll
   in
   (* if requested, connect all cudf packages representing binary packages to
    * the cudf packages representing the source package they each build from,
    * respectively *)
-  let cll = if options.Debian.Debcudf.builds_from then begin
+  let cll = if options.Dose_debian.Debcudf.builds_from then begin
       let univ =
         Cudf.load_universe (CudfAdd.Cudf_set.elements (
             List.fold_right (
@@ -85,8 +85,8 @@ let deb_load_list options ?(status=[]) ?(raw=false) dll =
       List.map2 (List.map2 (fun cudfpkg debpkg ->
           match debpkg with
           | Deb _ ->
-            let srcpkg = try Debian.Sources.get_src_package univ cudfpkg
-              with Debian.Sources.NotfoundSrc ->
+            let srcpkg = try Dose_debian.Sources.get_src_package univ cudfpkg
+              with Dose_debian.Sources.NotfoundSrc ->
                 failwith (Printf.sprintf "cannot find source for binary package %s"
                             (CudfAdd.string_of_package cudfpkg))
             in
@@ -98,19 +98,19 @@ let deb_load_list options ?(status=[]) ?(raw=false) dll =
         )) cll dll
     end else cll
   in
-  let preamble = Debian.Debcudf.preamble in
+  let preamble = Dose_debian.Debcudf.preamble in
   let request = Cudf.default_request in
   let rawll = if raw && status = [] then Some dll else None in
-  let global_constraints = Debian.Debcudf.get_essential ~options tables in
+  let global_constraints = Dose_debian.Debcudf.get_essential ~options tables in
   let l = (preamble,cll,request,from_cudf,to_cudf,rawll,global_constraints) in
   Util.Timer.stop deb_load_list_timer l
-      
+
 let npm_load_list file =
   let (request,pkglist) = Npm.Packages.input_raw file in
-  let tables = Pef.Pefcudf.init_tables Versioning.SemverNode.compare pkglist in
-  let from_cudf (p,i) = Pef.Pefcudf.get_real_version tables (p,i) in
-  let to_cudf (p,v) = (p, Pef.Pefcudf.get_cudf_version tables (p,v)) in
-  let cl = List.map (Pef.Pefcudf.tocudf tables) pkglist in
+  let tables = Dose_pef.Pefcudf.init_tables Dose_versioning.SemverNode.compare pkglist in
+  let from_cudf (p,i) = Dose_pef.Pefcudf.get_real_version tables (p,i) in
+  let to_cudf (p,v) = (p, Dose_pef.Pefcudf.get_cudf_version tables (p,v)) in
+  let cl = List.map (Dose_pef.Pefcudf.tocudf tables) pkglist in
   let preamble = Npm.Npmcudf.preamble in
   let request = Cudf.default_request in
   (*
@@ -119,37 +119,37 @@ let npm_load_list file =
   (preamble,[cl;[]],request,from_cudf,to_cudf,None,[])
 
 let opam_load_list ?options file =
-  let (request,pkglist) = Opam.Packages.input_raw file in
-  let tables = Pef.Pefcudf.init_tables Versioning.Debian.compare pkglist in
-  let from_cudf (p,i) = Pef.Pefcudf.get_real_version tables (p,i) in
-  let to_cudf (p,v) = (p, Pef.Pefcudf.get_cudf_version tables (p,v)) in
+  let (request,pkglist) = Dose_opam.Packages.input_raw file in
+  let tables = Dose_pef.Pefcudf.init_tables Dose_versioning.Dose_debian.compare pkglist in
+  let from_cudf (p,i) = Dose_pef.Pefcudf.get_real_version tables (p,i) in
+  let to_cudf (p,v) = (p, Dose_pef.Pefcudf.get_cudf_version tables (p,v)) in
   let options =
     match options with
     |None -> {
-      Opam.Opamcudf.default_options with
-      Opam.Opamcudf.switch = request.Opam.Packages.switch;
-      switches = request.Opam.Packages.switches;
-      profiles = request.Opam.Packages.profiles }
+      Dose_opam.Opamcudf.default_options with
+      Dose_opam.Opamcudf.switch = request.Dose_opam.Packages.switch;
+      switches = request.Dose_opam.Packages.switches;
+      profiles = request.Dose_opam.Packages.profiles }
     |Some opt -> opt
   in
-  let cl = List.flatten (List.map (Opam.Opamcudf.tocudf ~options tables) pkglist) in
-  let preamble = Opam.Opamcudf.preamble in
-  let request = Opam.Opamcudf.requesttocudf tables (Cudf.load_universe cl) request in
+  let cl = List.flatten (List.map (Dose_opam.Opamcudf.tocudf ~options tables) pkglist) in
+  let preamble = Dose_opam.Opamcudf.preamble in
+  let request = Dose_opam.Opamcudf.requesttocudf tables (Cudf.load_universe cl) request in
   (preamble,[cl;[]],request,from_cudf,to_cudf,None,[])
 
-let pef_load_list ?compare options dll =
-  let compare = match compare with Some c -> c |None -> Versioning.Debian.compare in
+let pef_load_list ?compare dll =
+  let compare = match compare with Some c -> c |None -> Dose_versioning.Debian.compare in
   let extras = [("maintainer",("maintainer",`String None))] in
   let pkglist = List.flatten dll in
-  let tables = Pef.Pefcudf.init_tables compare pkglist in
-  let from_cudf (p,i) = Pef.Pefcudf.get_real_version tables (p,i) in
-  let to_cudf (p,v) = (p,Pef.Pefcudf.get_cudf_version tables (p,v)) in
+  let tables = Dose_pef.Pefcudf.init_tables compare pkglist in
+  let from_cudf (p,i) = Dose_pef.Pefcudf.get_real_version tables (p,i) in
+  let to_cudf (p,v) = (p,Dose_pef.Pefcudf.get_cudf_version tables (p,v)) in
   let cll =
     List.map (fun l ->
-      List.map (Pef.Pefcudf.tocudf ~extras tables) l
+      List.map (Dose_pef.Pefcudf.tocudf ~extras tables) l
     ) dll
   in
-  let preamble = Pef.Pefcudf.preamble in
+  let preamble = Dose_pef.Pefcudf.preamble in
   let request = Cudf.default_request in
   (preamble,cll,request,from_cudf,to_cudf,None,[])
 
@@ -158,7 +158,7 @@ let csw_load_list dll =
   let tables = Csw.Cswcudf.init_tables pkglist in
   let from_cudf (p,i) = (p,None,Csw.Cswcudf.get_real_version tables (p,i)) in
   let to_cudf (p,v) = (p, Csw.Cswcudf.get_cudf_version tables (p,v)) in
-  let cll = 
+  let cll =
     List.map (fun l ->
       List.map (Csw.Cswcudf.tocudf tables) l
     ) dll
@@ -166,30 +166,30 @@ let csw_load_list dll =
   let preamble = Csw.Cswcudf.preamble in
   let request = Cudf.default_request in
   (preamble,cll,request,from_cudf,to_cudf,None,[])
- 
+
 let edsp_load_list options file =
-  let (request,pkglist) = Debian.Edsp.input_raw file in
+  let (request,pkglist) = Dose_debian.Edsp.input_raw file in
   let (native_arch,foreign_archs) =
     StdUtils.get_architectures
-      request.Debian.Edsp.architecture
-      request.Debian.Edsp.architectures
-      options.Debian.Debcudf.native
-      (match options.Debian.Debcudf.foreign with [] -> None | l -> Some l)
+      request.Dose_debian.Edsp.architecture
+      request.Dose_debian.Edsp.architectures
+      options.Dose_debian.Debcudf.native
+      (match options.Dose_debian.Debcudf.foreign with [] -> None | l -> Some l)
   in
-  let options = { 
-    options with 
-    Debian.Debcudf.native = native_arch;
-    Debian.Debcudf.foreign = foreign_archs
+  let options = {
+    options with
+    Dose_debian.Debcudf.native = native_arch;
+    Dose_debian.Debcudf.foreign = foreign_archs
   } in
-  let tables = Debian.Debcudf.init_tables ~options pkglist in
+  let tables = Dose_debian.Debcudf.init_tables ~options pkglist in
   let preamble =
-    let l = List.map snd Debian.Edsp.extras_tocudf in
-    Common.CudfAdd.add_properties Debian.Debcudf.preamble l
-  in  
+    let l = List.map snd Dose_debian.Edsp.extras_tocudf in
+    Dose_common.CudfAdd.add_properties Dose_debian.Debcudf.preamble l
+  in
   let univ = Hashtbl.create (2*(List.length pkglist)-1) in
   let cudfpkglist =
     List.filter_map (fun pkg ->
-      let p = Debian.Edsp.tocudf tables ~options pkg in
+      let p = Dose_debian.Edsp.tocudf tables ~options pkg in
       if not(Hashtbl.mem univ (p.Cudf.package,p.Cudf.version)) then begin
         Hashtbl.add univ (p.Cudf.package,p.Cudf.version) pkg;
         Some p
@@ -200,10 +200,10 @@ let edsp_load_list options file =
       end
     ) pkglist
   in
-  let request = Debian.Edsp.requesttocudf tables (Cudf.load_universe cudfpkglist) request in
-  let to_cudf (p,v) = (p,Debian.Debcudf.get_cudf_version tables (p,v)) in
-  let from_cudf (p,i) = Debian.Debcudf.get_real_version tables (p,i) in
-  let global_constraints = Debian.Debcudf.get_essential ~options tables in
+  let request = Dose_debian.Edsp.requesttocudf tables (Cudf.load_universe cudfpkglist) request in
+  let to_cudf (p,v) = (p,Dose_debian.Debcudf.get_cudf_version tables (p,v)) in
+  let from_cudf (p,i) = Dose_debian.Debcudf.get_real_version tables (p,i) in
+  let global_constraints = Dose_debian.Debcudf.get_essential ~options tables in
   (preamble,[cudfpkglist;[]],request,from_cudf,to_cudf,None,global_constraints)
 
 let edsp_load_universe options file =
@@ -215,13 +215,14 @@ let deb_load_universe options ?(raw=false) l =
   let (pr,cll,r,f,t,w,e) = deb_load_list options ~raw l in
   (pr,Cudf.load_universe (List.flatten cll), r, f, t, w,e)
 
+[@@@warning "-27"]
 (** transform a list of rpm control stanza into a cudf packages list *)
 let rpm_load_list dll =
 #ifdef HASRPM
   let tables =  Rpm.Rpmcudf.init_tables (List.flatten dll) in
-  let cll = 
-    List.map (fun l -> 
-      List.map (Rpm.Rpmcudf.tocudf tables) l 
+  let cll =
+    List.map (fun l ->
+      List.map (Rpm.Rpmcudf.tocudf tables) l
     ) dll
   in
   (* Rpm.Rpmcudf.clear tables; *)
@@ -233,6 +234,7 @@ let rpm_load_list dll =
 #else
   failwith "librpm not available. re-configure with --with-rpm"
 #endif
+[@@@warning "+27"]
 
 (** transform a list of rpm control stanza into a cudf universe *)
 let rpm_load_universe l =
@@ -254,9 +256,9 @@ let parse_cudf doc =
 
 (** parse a cudf file and return a triple (preamble,universe,request option).
     If the package is not valid return an empty list of packages *)
-let load_cudf doc = 
+let load_cudf doc =
   let ch = Input.open_file doc in
-  let l = 
+  let l =
     try
       let p = Cudf_parser.from_IO_in_channel ch in
       Cudf_parser.load p
@@ -266,7 +268,7 @@ let load_cudf doc =
       fatal "Error while parsing CUDF from %s (%s): %s" doc (Format822.string_of_loc loc) msg ;
     |Cudf.Constraint_violation _ as exn -> begin
       fatal "Error while loading CUDF file %s:\n%s" doc (Printexc.to_string exn)
-    end 
+    end
   in
   Input.close_ch ch;
   l
@@ -298,17 +300,17 @@ let unpack expected = function
   | _ -> "cannot handle input"
 
 let deb_parse_input options ?(status=[]) ?(raw=false) urilist =
-  let archs = 
-    if not(Option.is_none options.Debian.Debcudf.native) then
-      (Option.get options.Debian.Debcudf.native) :: options.Debian.Debcudf.foreign 
+  let archs =
+    if not(Option.is_none options.Dose_debian.Debcudf.native) then
+      (Option.get options.Dose_debian.Debcudf.native) :: options.Dose_debian.Debcudf.foreign
     else []
   in
-  let dll = 
+  let dll =
     List.map (fun l ->
       List.fold_left (fun acc (t,(_,_,_,_,f),_) ->
           match t with
-          | `Deb -> List.fold_left (fun acc p -> (Deb p)::acc) acc (Debian.Packages.input_raw ~archs [f])
-          | `DebSrc -> List.fold_left (fun acc p -> (DebSrc p)::acc) acc (Debian.Sources.input_raw ~archs [f])
+          | `Deb -> List.fold_left (fun acc p -> (Deb p)::acc) acc (Dose_debian.Packages.input_raw ~archs [f])
+          | `DebSrc -> List.fold_left (fun acc p -> (DebSrc p)::acc) acc (Dose_debian.Sources.input_raw ~archs [f])
           | _ -> fatal "cannot handle input"
           ) [] l
     ) urilist
@@ -317,13 +319,13 @@ let deb_parse_input options ?(status=[]) ?(raw=false) urilist =
 
 let pef_parse_input ?compare options urilist =
   let extras = [("maintainer",None)] in
-  let dll = 
+  let dll =
     List.map (fun l ->
         let filelist = unpack_l `Pef l in
-        Pef.Packages.input_raw ~extras filelist
+        Dose_pef.Packages.input_raw ~extras filelist
     ) urilist
   in
-  pef_load_list ?compare options dll
+  pef_load_list ?compare dll
 
 let npm_parse_input ?options urilist =
   match urilist with
@@ -332,7 +334,7 @@ let npm_parse_input ?options urilist =
   |l ->
     if List.length (List.flatten l) > 1 then
       warning "more than one npm request file specified on the command line";
-    let p = List.hd (List.flatten l) in 
+    let p = List.hd (List.flatten l) in
     npm_load_list (unpack `Npm p)
 ;;
 
@@ -343,12 +345,12 @@ let opam_parse_input ?options urilist =
   |l ->
     if List.length (List.flatten l) > 1 then
       warning "more than one opam request file specified on the command line";
-    let p = List.hd (List.flatten l) in 
+    let p = List.hd (List.flatten l) in
     opam_load_list ?options (unpack `Opam p)
 ;;
 
 let csw_parse_input urilist =
-  let dll = 
+  let dll =
     List.map (fun l ->
         let filelist = unpack_l `Csw l in
         Csw.Packages.input_raw filelist
@@ -363,7 +365,7 @@ let cudf_parse_input urilist =
   |l ->
     if List.length (List.flatten l) > 1 then
       warning "more than one cudf specified on the command line";
-    let p = List.hd (List.flatten l) in 
+    let p = List.hd (List.flatten l) in
     cudf_load_list (unpack `Cudf p)
 ;;
 
@@ -374,7 +376,7 @@ let edsp_parse_input options urilist =
   |l ->
     if List.length (List.flatten l) > 1 then
       warning "more than one cudf specified on the command line";
-    let p = List.hd (List.flatten l) in 
+    let p = List.hd (List.flatten l) in
     edsp_load_list options (unpack `Edsp p)
 ;;
 
@@ -388,14 +390,14 @@ let parse_input ?(options=None) ?(raw=false) ?compare urilist =
   |`Cudf, None -> cudf_parse_input filelist
 
   |`Deb, None
-  |`DebSrc, None -> deb_parse_input Debian.Debcudf.default_options ~raw filelist
-  |`Pef, None -> pef_parse_input ?compare Debian.Debcudf.default_options filelist
+  |`DebSrc, None -> deb_parse_input Dose_debian.Debcudf.default_options ~raw filelist
+  |`Pef, None -> pef_parse_input ?compare Dose_debian.Debcudf.default_options filelist
 
   |`Deb, Some (StdOptions.Deb opt)
   |`DebSrc, Some (StdOptions.Deb opt) -> deb_parse_input opt ~raw filelist
-  
+
 (*  |`Edsp, Some (StdOptions.Edsp opt) -> edsp_parse_input opt filelist *)
-  |`Edsp, _ -> edsp_parse_input Debian.Debcudf.default_options filelist
+  |`Edsp, _ -> edsp_parse_input Dose_debian.Debcudf.default_options filelist
   |`Opam, _ -> opam_parse_input filelist
   |`Npm, _ -> npm_parse_input filelist
 (* |`Opam, Some (StdOptions.Opam options) -> opam_parse_input ~options filelist *)
@@ -404,22 +406,22 @@ let parse_input ?(options=None) ?(raw=false) ?compare urilist =
 
   |`Csw, None -> csw_parse_input filelist
 
-  |`Hdlist, None -> 
-#ifdef HASRPM 
-      let dll = 
+  |`Hdlist, None ->
+#ifdef HASRPM
+      let dll =
         List.map (fun l ->
           let filelist = unpack_l `Hdlist l in
           Rpm.Packages.Hdlists.input_raw filelist
-        ) filelist 
+        ) filelist
       in
       rpm_load_list dll
 #else
     fatal "hdlist Not supported. re-configure with --with-rpm"
 #endif
 
-  |`Synthesis, None -> 
-#ifdef HASRPM 
-      let dll = 
+  |`Synthesis, None ->
+#ifdef HASRPM
+      let dll =
         List.map (fun l ->
           let filelist = unpack_l `Synthesis l in
           Rpm.Packages.Synthesis.input_raw filelist
@@ -434,8 +436,8 @@ let parse_input ?(options=None) ?(raw=false) ?compare urilist =
 
 let supported_formats () =
   let standard = ["cudf://";"deb://";"deb://-";"eclipse://";"pef://"] in
-  let rpm = 
-#ifdef HASRPM 
+  let rpm =
+#ifdef HASRPM
      ["hdlist://";"synthesis://"]
 #else
      []
@@ -447,8 +449,8 @@ let supported_formats () =
 (** return a list of Debian packages from a debian source file *)
 let deb_load_source ?filter ?(dropalternatives=false) ?(profiles=[]) ?(noindep=false) ?(noarch=false) buildarch hostarch sourcefile =
   Util.Timer.start deb_load_source_timer;
-  let l = Debian.Sources.input_raw ?filter ~archs:[hostarch] [sourcefile] in
-  let r = Debian.Sources.sources2packages ~dropalternatives ~noindep ~noarch ~profiles buildarch hostarch l in
+  let l = Dose_debian.Sources.input_raw ?filter ~archs:[hostarch] [sourcefile] in
+  let r = Dose_debian.Sources.sources2packages ~dropalternatives ~noindep ~noarch ~profiles buildarch hostarch l in
   Util.Timer.stop deb_load_source_timer r
 ;;
 

@@ -12,26 +12,30 @@
 
 let run () =
   let reps = Int64.of_int 4 in
-  let latency s f = Benchmark.latency1 ~name:s reps f in 
+  let latency s f = Benchmark.latency1 ~name:s reps f in
   let load = latency "Depsolver.load" Depsolver.load in
   let trim = latency "Depsolver.trim" Depsolver.trim in
   let univcheck = latency "Depsolver.univcheck" Depsolver.univcheck in
-  let strongdeps = latency "Strongdeps.strongdeps" Strongdeps.strongdeps_univ in
-  let strongconflicts = latency "Strongconflicts.strongconflicts" Strongconflicts.strongconflicts in
-
+  let strongdeps =
+    latency "Strongdeps.strongdeps" Strongdeps.strongdeps_univ
+  in
+  let strongconflicts =
+    latency "Strongconflicts.strongconflicts" Strongconflicts.strongconflicts
+  in
   let universe =
     let f_debian = "tests/debian.cudf" in
-    let (_,pl,_) = Cudf_parser.parse_from_file f_debian in
+    let (_, pl, _) = Cudf_parser.parse_from_file f_debian in
     Cudf.load_universe pl
   in
-  List.fold_left Benchmark.merge [] [
-    strongdeps universe;
-    (* strongconflicts universe; *)
-    univcheck universe;
-    load universe;
-    trim universe;
-  ] 
-;;
+  List.fold_left
+    Benchmark.merge
+    []
+    [
+      strongdeps universe;
+      (* strongconflicts universe; *)
+        univcheck universe;
+      load universe;
+      trim universe;
+    ]
 
-let _ = ExtBenchmark.main run ;;
-
+let _ = ExtBenchmark.main run

@@ -14,13 +14,16 @@
 
 (** [strongdeps u l] build the strong dependency graph of all packages in 
     [l] wrt the universe [u] *)
-val strongdeps : ?transitive:bool ->
-  Cudf.universe -> Cudf.package list -> Defaultgraphs.PackageGraph.G.t
+val strongdeps :
+  ?transitive:bool ->
+  Cudf.universe ->
+  Cudf.package list ->
+  Defaultgraphs.PackageGraph.G.t
 
 (** [strongdeps_univ u] build the strong dependency graph of 
     all packages in the universe [u] *)
-val strongdeps_univ : ?transitive:bool -> 
-  Cudf.universe -> Defaultgraphs.PackageGraph.G.t
+val strongdeps_univ :
+  ?transitive:bool -> Cudf.universe -> Defaultgraphs.PackageGraph.G.t
 
 (** compute the impact set of the node [q], that is the list of all 
     packages [p] that strong depends on [q] *)

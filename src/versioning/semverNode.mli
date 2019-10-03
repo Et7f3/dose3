@@ -9,21 +9,22 @@
 (*  exception to the GNU Lesser General Public License applies to this                *)
 (*  library, see the COPYING file for more information.                               *)
 (**************************************************************************************)
- 
+
 (** this functions follow the semantic versioning specification http://semver.org/ *)
 
 (** Raw version components. Raw versions are not strictly semantic versions, but
     can also contains characters as 'x' and 'X' . Raw versions must be converted
     to semantic versions. *)
-type raw_version = (string * string * string * string list * string list)
+type raw_version = string * string * string * string list * string list
 
 type ident = S of string | N of int
+
 type version = {
-  major: int;
-  minor: int;
-  patch: int;
-  pre: ident list;
-  build: string list;
+  major : int;
+  minor : int;
+  patch : int;
+  pre : ident list;
+  build : string list;
 }
 
 (** Parses a string into a version. 

@@ -13,7 +13,7 @@
 (**************************************************************************)
 
 open ExtLib
-open Common
+open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
@@ -33,9 +33,9 @@ end
 (* *************************************** *)
 
 let vpkg_option ?default ?(metavar = " <vpkg>") () =
-  let parse_vpkg s = 
+  let parse_vpkg s =
     let _loc = Format822.dummy_loc in
-    Pef.Packages.parse_vpkg ("cmdline <vpkg>",(_loc,s))
+    Dose_pef.Packages.parse_vpkg ("cmdline <vpkg>",(_loc,s))
   in
   OptParse.Opt.value_option metavar default
   parse_vpkg (fun _ s -> Printf.sprintf "Invalid vpackage '%s'" s)
@@ -43,9 +43,9 @@ let vpkg_option ?default ?(metavar = " <vpkg>") () =
 
 (* this is a ,-separated list of vpkgs of the form "a (<c> v)" *)
 let vpkglist_option ?default ?(metavar = " <vpkglst>") () =
-  let parse_vpkglist s = 
+  let parse_vpkglist s =
     let _loc = Format822.dummy_loc in
-    Pef.Packages.parse_vpkglist ("cmdline <vpkglst>",(_loc,s))
+    Dose_pef.Packages.parse_vpkglist ("cmdline <vpkglst>",(_loc,s))
   in
   OptParse.Opt.value_option metavar default
   parse_vpkglist (fun _ s -> Printf.sprintf "Invalid vpackage list '%s'" s)
@@ -53,14 +53,14 @@ let vpkglist_option ?default ?(metavar = " <vpkglst>") () =
 
 (* this is a ,-separated list of vpkgs of the form "a (= v)" *)
 let pkglist_option ?default ?(metavar = " <pkglst>") () =
-  let parse_vpkglist s = 
+  let parse_vpkglist s =
     let _loc = Format822.dummy_loc in
     List.map (function
       |((n,a),Some("=",v)) -> (n,a,v)
-      |((n,a),None) ->
+      |((_,_),None) ->
           raise (Format822.ParseError ([],s,"you must specify a version" ))
       |_ -> raise (Format822.ParseError ([],s,""))
-    ) (Pef.Packages.parse_vpkglist ("cmdline <pkglst>",(_loc,s)))
+    ) (Dose_pef.Packages.parse_vpkglist ("cmdline <pkglst>",(_loc,s)))
   in
   OptParse.Opt.value_option metavar default
   parse_vpkglist (fun _ s -> Printf.sprintf "Invalid package list '%s'" s)
@@ -79,10 +79,10 @@ let criteria_option ?default ?(metavar = " <criteria>") () =
 (* *************************************** *)
 
 let incr_str_list ?(default=Some []) ?(metavar = " <str>") =
-  let acc = ref [] in 
+  let acc = ref [] in
   let coerce s = acc := s :: !acc ; !acc in
   fun () ->
-  OptParse.Opt.value_option metavar default coerce 
+  OptParse.Opt.value_option metavar default coerce
   (fun _ s -> Printf.sprintf "Invalid String '%s'" s)
 ;;
 
@@ -142,11 +142,11 @@ module DistcheckOptions = struct
     "summary"
   ]
 
-  let group = ref None 
+  let group = ref None
   let descr = "Distcheck Options"
 
   let add_options ?(default=default_options) options =
-    let open OptParser in 
+    let open OptParser in
     if List.length default > 0 then begin
       let group = create_group group descr options in
       if List.mem "explain" default then
@@ -167,7 +167,7 @@ module DistcheckOptions = struct
   let add_option ?short_name ?long_name ?help options =
     let open OptParser in
     let group = create_group group descr options in
-    add options ~group ?short_name ?long_name ?help 
+    add options ~group ?short_name ?long_name ?help
   ;;
 
 end
@@ -185,18 +185,18 @@ module OutputOptions = struct
     "dot"
   ]
 
-  let group = ref None 
+  let group = ref None
   let descr = "Output Options"
 
   let add_options ?(default=default_options) options =
-    let open OptParser in 
+    let open OptParser in
     if List.length default > 0 then begin
       let group = create_group group descr options in
       if List.mem "outfile" default then
         add options ~group ~short_name:'o' ~long_name:"outfile"
         ~help:"Redirect the output to a file (default stdout)" outfile;
       if List.mem "outdir" default then
-        add options ~group ~short_name:'d' ~long_name:"outdir" 
+        add options ~group ~short_name:'d' ~long_name:"outdir"
         ~help:"Set the output directory (default current directory)" outdir;
       if List.mem "dot" default then
         add options ~group ~long_name:"dot"
@@ -207,7 +207,7 @@ module OutputOptions = struct
   let add_option ?short_name ?long_name ?help options =
     let open OptParser in
     let group = create_group group descr options in
-    add options ~group ?short_name ?long_name ?help 
+    add options ~group ?short_name ?long_name ?help
   ;;
 
 end
@@ -222,7 +222,7 @@ module InputOptions = struct
     let error _ s = Printf.sprintf "input format \"%s\" not supported. Must be one of: %s" s supported in
     Opt.value_option metavar default coerce error
 
-  let vtypes = Versioning.Utils.supported_formats
+  let vtypes = Dose_versioning.Utils.supported_formats
   let comp_option ?default ?(metavar = Printf.sprintf "<%s>" (String.concat "|" vtypes)) () =
     let coerce s = if List.mem s vtypes then s else raise Not_found in
     let supported = String.concat ", " vtypes in
@@ -251,9 +251,9 @@ module InputOptions = struct
   let descr = "Input Options"
 
   (** give a list of positional arguments returns two list of resources,
-      foreground and background. Positional arguments are assumed to be 
+      foreground and background. Positional arguments are assumed to be
       foreground resources. *)
-  let parse_cmdline (it,im) posargs = 
+  let parse_cmdline (it,im) posargs =
     let add_format t = List.map (fun s -> (Url.scheme_to_string t)^"://"^s) in
     let fg = OptParse.Opt.get foreground in
     let bg = OptParse.Opt.get background in
@@ -265,19 +265,19 @@ module InputOptions = struct
   ;;
 
   let add_options ?(default=default_options) options =
-    let open OptParser in 
+    let open OptParser in
     if List.length default > 0 then begin
       let group = create_group group descr options in
       if List.mem "inputtype" default then
         add options ~group ~short_name:'t' ~help:"Set the input type format" inputtype;
       if List.mem "checkonly" default then
-        add options ~group ~long_name:"checkonly" 
+        add options ~group ~long_name:"checkonly"
         ~help:"Check only these packages" checkonly;
       if List.mem "trim" default then
-        add options ~group ~long_name:"trim" 
+        add options ~group ~long_name:"trim"
         ~help:"Consider only installable packages" trim;
       if List.mem "latest" default then
-        add options ~group ~long_name:"latest" 
+        add options ~group ~long_name:"latest"
         ~help:"Consider only the latest N versions of each package" latest;
       if List.mem "fg" default then
         add options ~group ~long_name:"fg"
@@ -297,16 +297,16 @@ module InputOptions = struct
   let add_option ?short_name ?long_name ?help options =
     let open OptParser in
     let group = create_group group descr options in
-    add options ~group ?short_name ?long_name ?help 
+    add options ~group ?short_name ?long_name ?help
   ;;
 
 end
 
 type options =
-  |Deb of Debian.Debcudf.options
-  |Pef of Debian.Debcudf.options
-  |Opam of Opam.Opamcudf.options
-  |Edsp of Debian.Debcudf.options
+  |Deb of Dose_debian.Debcudf.options
+  |Pef of Dose_debian.Debcudf.options
+  |Opam of Dose_opam.Opamcudf.options
+  |Edsp of Dose_debian.Debcudf.options
   |Csw
   |Rpm
   |Cudf
@@ -381,8 +381,8 @@ module DistribOptions = struct
         with Not_found -> []
     in
     {
-      Debian.Debcudf.default_options with
-      Debian.Debcudf.native = native;
+      Dose_debian.Debcudf.default_options with
+      Dose_debian.Debcudf.native = native;
       foreign = foreign;
       host = host;
       ignore_essential = Opt.get deb_ignore_essential;
@@ -405,8 +405,8 @@ module DistribOptions = struct
         Opt.get opam_profiles
       else []
     in
-    { Opam.Opamcudf.default_options with
-      Opam.Opamcudf.switch = switch;
+    { Dose_opam.Opamcudf.default_options with
+      Dose_opam.Opamcudf.switch = switch;
       switches = switches;
       profiles = profiles;
     }
@@ -414,23 +414,23 @@ module DistribOptions = struct
 
   let set_default_options = function
     |`Deb -> Some (
-      Deb { 
-        Debian.Debcudf.default_options with
-        Debian.Debcudf.ignore_essential = true
+      Deb {
+        Dose_debian.Debcudf.default_options with
+        Dose_debian.Debcudf.ignore_essential = true
       })
     |`Edsp -> Some (
-      Edsp { 
-        Debian.Debcudf.default_options with
-        Debian.Debcudf.ignore_essential = true
+      Edsp {
+        Dose_debian.Debcudf.default_options with
+        Dose_debian.Debcudf.ignore_essential = true
       })
-    |`Pef -> Some (Pef Debian.Debcudf.default_options)
-    |`Opam -> Some (Opam Opam.Opamcudf.default_options)
+    |`Pef -> Some (Pef Dose_debian.Debcudf.default_options)
+    |`Opam -> Some (Opam Dose_opam.Opamcudf.default_options)
     |_ -> None
 
   let set_options = function
     |`Deb |`DebSrc -> Some (Deb (set_deb_options ()))
     |`Edsp -> Some (Edsp (set_deb_options ()))
-    |`Pef -> Some (Pef Debian.Debcudf.default_options)
+    |`Pef -> Some (Pef Dose_debian.Debcudf.default_options)
     |`Opam -> Some (Opam (set_opam_options ()))
     |_ -> None
   ;;
@@ -465,13 +465,13 @@ module DistribOptions = struct
         add options ~group ~long_name:"deb-native-arch"
           ~help:"Native architecture" deb_native_arch;
       if List.mem "deb-host-arch" default then
-        add options ~group ~long_name:"deb-host-arch" 
+        add options ~group ~long_name:"deb-host-arch"
           ~help:"Native/cross compile host architecture, defaults to native architecture" deb_host_arch;
       if List.mem "deb-foreign-archs" default then
-        add options ~group ~long_name:"deb-foreign-archs" 
+        add options ~group ~long_name:"deb-foreign-archs"
           ~help:"Foreign architectures in addition to native and host architectures" deb_foreign_archs;
       if List.mem "deb-ignore-essential" default then
-        add options ~group ~long_name:"deb-ignore-essential" 
+        add options ~group ~long_name:"deb-ignore-essential"
           ~help:"Ignore Essential Packages" deb_ignore_essential;
       if List.mem "deb-builds-from" default then
         add options ~group ~long_name:"deb-builds-from"

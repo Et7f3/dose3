@@ -13,7 +13,7 @@
 (**************************************************************************)
 
 open ExtLib
-open Common
+open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
@@ -62,7 +62,7 @@ let pp_versions_table fmt (from_cudf, pkglist) =
     Format.fprintf fmt "%s=%d=%s@." p pkg.Cudf.version v
   ) pkglist
 
-(* exit code policy : 
+(* exit code policy :
 Exit codes 0-63 indicate a normal termination of the program, codes
 64-127 indicate abnormal termination of the program (such as parse
 errors, I/O errors).
@@ -74,7 +74,7 @@ In case of normal program termination:
   uninstallable.
 *)
 let if_application ?(alternatives=[]) filename main =
-  let normalize f = 
+  let normalize f =
     let bf = Filename.basename f in
     try
       if String.ends_with bf ".d.byte" then
@@ -87,18 +87,18 @@ let if_application ?(alternatives=[]) filename main =
   in
   let names = List.map normalize (filename::alternatives) in
   let invoked_as = normalize Sys.argv.(0) in
-  if List.exists ((=) invoked_as) names then 
+  if List.exists ((=) invoked_as) names then
     try (if main () = 0 then exit(0) else exit(1)) with
       |Unix.Unix_error(err, _, arg) -> begin
           Printf.eprintf "%s %s" (Unix.error_message err) arg;
-          Pervasives.exit(64) end
+          Stdlib.exit(64) end
       |exn -> begin
-          Printexc.print_backtrace stderr; 
+          Printexc.print_backtrace stderr;
           Printf.eprintf "The applications raised this exception : ";
           Printf.eprintf "%s\n" (Printexc.to_string exn);
-          Pervasives.exit(64) end
+          Stdlib.exit(64) end
   else begin
     Printf.eprintf "you are using %s as a module and not as an executable\n" Sys.argv.(0);
-    Printf.eprintf "%s can be run as an exactable if named : %s\n" Sys.argv.(0) 
+    Printf.eprintf "%s can be run as an exactable if named : %s\n" Sys.argv.(0)
     (ExtString.String.join " , " names)
   end

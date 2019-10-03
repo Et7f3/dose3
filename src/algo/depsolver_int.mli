@@ -25,18 +25,22 @@
     operation and therefore speed up operations.
 *)
 
-
 (** Sat Solver instance *)
-module R : sig type reason = Diagnostic.reason_int end
+module R : sig
+  type reason = Diagnostic.reason_int
+end
+
 module S : Dose_common.EdosSolver.T with module X = R
 
 (** internal state of the sat solver. The map allows to transform
     sat solver variables (that must be contiguous) to integers
     representing the id of a package *)
 type solver = {
-  constraints : S.state;         (** the sat problem *)
-  map : Dose_common.Util.projection;  (** a map from cudf package ids to solver ids *)
-  globalid : (bool * bool) * int (** (keep_constrains,global_constrains),gui) where
+  constraints : S.state;  (** the sat problem *)
+  map : Dose_common.Util.projection;
+      (** a map from cudf package ids to solver ids *)
+  globalid : (bool * bool) * int;
+      (** (keep_constrains,global_constrains),gui) where
                                      gid is the last index of the cudfpool. Used to encode
                                      a 'dummy' package and to enforce global constraints.
                                      keep_constrains and global_constrains are true if either
@@ -51,8 +55,7 @@ type global_constraints = (Cudf_types.vpkglist * int list) list
   cudf dependencies to a list of solver varialbles representing
   a package *)
 type dep_t =
-    (Cudf_types.vpkg list * int list) list *
-    (Cudf_types.vpkg * int list) list
+  (Cudf_types.vpkg list * int list) list * (Cudf_types.vpkg * int list) list
 
 and pool = dep_t array
 
@@ -61,28 +64,36 @@ and pool = dep_t array
     where all integers are interpreted as cudf package indentifiers. The
     boolean associate to the cudfpool is true if keep_constrains are
     present in the universe. The last index of the pool is the globalid *)
-and t = [`SolverPool of pool | `CudfPool of (bool * pool)]
+and t = [`SolverPool of pool | `CudfPool of bool * pool]
 
 type result =
-  | Success of (unit -> int list) (** return a function providing the list of the
+  | Success of (unit -> int list)
+      (** return a function providing the list of the
                                       cudf packages belonging to the installation set *)
-  | Failure of (unit -> Diagnostic.reason_int list) (** return a function with the
+  | Failure of (unit -> Diagnostic.reason_int list)
+      (** return a function with the
                                                         failure explanations *)
 
 (** Given a cudf universe , this function returns a [CudfPool].
     We assume that cudf uid are sequential and we can use them as an array index.
     The last index of the pool is the globalid.
  *)
-val init_pool_univ : global_constraints : global_constraints -> Cudf.universe -> [> `CudfPool of (bool * pool)]
+val init_pool_univ :
+  global_constraints:global_constraints ->
+  Cudf.universe ->
+  [> `CudfPool of bool * pool]
 
 (** this function creates an array indexed by solver ids that can be
     used to init the edos solver. Return a [SolverPool] *)
-val init_solver_pool : Dose_common.Util.projection ->
-  [< `CudfPool of (bool * pool)] -> 'a list -> [> `SolverPool of pool]
+val init_solver_pool :
+  Dose_common.Util.projection ->
+  [< `CudfPool of bool * pool] ->
+  'a list ->
+  [> `SolverPool of pool]
 
 (** Initalise the sat solver. Operates only on solver ids [SolverPool] *)
-val init_solver_cache : ?buffer:bool -> ?explain:bool ->
-  [< `SolverPool of pool] -> S.state
+val init_solver_cache :
+  ?buffer:bool -> ?explain:bool -> [< `SolverPool of pool] -> S.state
 
 (** Call the sat solver
 
@@ -91,26 +102,36 @@ val init_solver_cache : ?buffer:bool -> ?explain:bool ->
                     explanation graph
 *)
 val solve :
-	?tested: bool array ->
-	explain: bool -> solver ->
-	Diagnostic.request_int ->
-		Diagnostic.result_int
+  ?tested:bool array ->
+  explain:bool ->
+  solver ->
+  Diagnostic.request_int ->
+  Diagnostic.result_int
 
 (** [pkgcheck callback solver tested id].
    This function is used to "distcheck" a list of packages
    *)
 val pkgcheck :
-	(Diagnostic.result_int * Diagnostic.request_int -> unit) option ->
-	bool -> solver -> bool array -> int ->
-		bool
+  (Diagnostic.result_int * Diagnostic.request_int -> unit) option ->
+  bool ->
+  solver ->
+  bool array ->
+  int ->
+  bool
 
 (** Constraint solver initialization
 
     @param buffer debug buffer to print out debug messages
     @param univ cudf package universe
 *)
-val init_solver_univ : global_constraints : global_constraints -> ?buffer: bool ->
-    ?explain: bool -> Cudf.universe -> solver
+val init_solver_univ :
+  global_constraints:global_constraints ->
+  ?buffer:bool ->
+  ?explain:bool ->
+  Cudf.universe ->
+  solver
+
+(* pool = cudf pool - closure = dependency clousure . cudf uid list *)
 
 (** Constraint solver initialization
 
@@ -118,9 +139,12 @@ val init_solver_univ : global_constraints : global_constraints -> ?buffer: bool 
     @param pool dependencies and conflicts array idexed by package id
     @param closure subset of packages used to initialize the solver
 *)
-(* pool = cudf pool - closure = dependency clousure . cudf uid list *)
-val init_solver_closure : global_constraints : global_constraints -> ?buffer:bool ->
-  [< `CudfPool of (bool * pool)] -> int list -> solver
+val init_solver_closure :
+  global_constraints:global_constraints ->
+  ?buffer:bool ->
+  [< `CudfPool of bool * pool] ->
+  int list ->
+  solver
 
 (** return a copy of the state of the solver *)
 val copy_solver : solver -> solver
@@ -139,8 +163,12 @@ val reverse_dependencies : Cudf.universe -> int list array
     @param maxdepth the maximum cone depth (infinite by default)
     @param conjunctive consider only conjunctive dependencies (false by default)
 *)
-val dependency_closure_cache : ?maxdepth:int -> ?conjunctive:bool ->
-  [< `CudfPool of (bool * pool)] -> int list -> int list
+val dependency_closure_cache :
+  ?maxdepth:int ->
+  ?conjunctive:bool ->
+  [< `CudfPool of bool * pool] ->
+  int list ->
+  int list
 
 (** return the dependency closure of the reverse dependency graph.
     The visit is bfs.
@@ -156,4 +184,5 @@ val reverse_dependency_closure :
 
 (** {2 Progress Bars} *)
 val progressbar_init : Dose_common.Util.Progress.t
+
 val progressbar_univcheck : Dose_common.Util.Progress.t

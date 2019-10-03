@@ -1,6 +1,7 @@
-
 (** Return the source package associated to a binary package *)
-val get_source : Packages.package -> ( Dose_pef.Packages_types.name * Dose_pef.Packages_types.version )
+val get_source :
+  Packages.package ->
+  Dose_pef.Packages_types.name * Dose_pef.Packages_types.version
 
 (** [cluster package list] returns a hashtbl that maps
     (source,sourceversion) -> to a packages list
@@ -11,7 +12,11 @@ val get_source : Packages.package -> ( Dose_pef.Packages_types.name * Dose_pef.P
     be sourceversion -> list of list of clusters grouped by version
     (source,sourceversion) -> (version, realversion, package list)
 *)
-val cluster : Packages.package list ->
-  (Dose_pef.Packages_types.name * Dose_pef.Packages_types.version,
-		(Dose_pef.Packages_types.version * Dose_pef.Packages_types.version * Packages.package list) list) ExtLib.Hashtbl.t
-
+val cluster :
+  Packages.package list ->
+  ( Dose_pef.Packages_types.name * Dose_pef.Packages_types.version,
+    ( Dose_pef.Packages_types.version
+    * Dose_pef.Packages_types.version
+    * Packages.package list )
+    list )
+  ExtLib.Hashtbl.t

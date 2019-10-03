@@ -46,4 +46,4 @@ type release = {
     The release file may be signed, but in this case the validity of 
     the signature is not checked!!
 *)
-val parse_release_in : string -> IO.input -> release option 
+val parse_release_in : string -> IO.input -> release option

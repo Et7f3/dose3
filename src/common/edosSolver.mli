@@ -20,7 +20,6 @@ end
 
 (** Sat solver functor type *)
 module type T = sig
-
   (** generic failure reason *)
   module X : S
 
@@ -51,7 +50,9 @@ module type T = sig
   *)
   val initialize_problem :
     ?print_var:(Format.formatter -> int -> unit) ->
-      ?buffer: bool -> int -> state
+    ?buffer:bool ->
+    int ->
+    state
 
   (** provide a deep copy of the current state of the solver *)
   val copy : state -> state
@@ -103,4 +104,4 @@ module type T = sig
 end
 
 (** functor *)
-module M : functor (X : S) -> T with module X = X
+module M (X : S) : T with module X = X

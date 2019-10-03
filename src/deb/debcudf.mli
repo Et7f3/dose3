@@ -16,24 +16,31 @@
 type tables
 
 type extramap = (string * (string * Cudf_types.typedecl1)) list
+
 type options = {
-  extras_opt : extramap ;
-  native : string option; (** the native architecture *)
-  foreign : string list ; (** list of foreign architectures *)
-  host : string option;   (** the host architecture - cross compile *)
-  ignore_essential : bool ;
-  builds_from : bool ;    (** whether to add the builds-from relationship from binary to source packages *)
-  drop_bd_indep : bool ;  (** whether or not to ignore the Build-Depends-Indep field *)
-  drop_bd_arch : bool ;   (** whether or not to ignore the Build-Depends-Arch field *)
-  profiles : string list ; (** list of active build profiles *)
+  extras_opt : extramap;
+  native : string option;  (** the native architecture *)
+  foreign : string list;  (** list of foreign architectures *)
+  host : string option;  (** the host architecture - cross compile *)
+  ignore_essential : bool;
+  builds_from : bool;
+      (** whether to add the builds-from relationship from binary to source packages *)
+  drop_bd_indep : bool;
+      (** whether or not to ignore the Build-Depends-Indep field *)
+  drop_bd_arch : bool;
+      (** whether or not to ignore the Build-Depends-Arch field *)
+  profiles : string list;  (** list of active build profiles *)
 }
 
 val default_options : options
 
 (** initialize the version conversion tables *)
 val init_tables :
-  ?options:options -> ?step:int -> ?versionlist:Dose_pef.Packages_types.version list ->
-    Packages.package list -> tables
+  ?options:options ->
+  ?step:int ->
+  ?versionlist:Dose_pef.Packages_types.version list ->
+  Packages.package list ->
+  tables
 
 val clear : tables -> unit
 
@@ -41,16 +48,20 @@ val clear : tables -> unit
  * return Not_found if there is not package or cudf version associated
  * to the tuple (name,version) *)
 val get_cudf_version :
-  tables -> Dose_pef.Packages_types.name * Dose_pef.Packages_types.version -> int
+  tables ->
+  Dose_pef.Packages_types.name * Dose_pef.Packages_types.version ->
+  int
 
 (** Get the orgininal debian package name. Remove deb -> cudf conversion cruft *)
-val get_real_name : Cudf_types.pkgname -> (string * string option)
+val get_real_name : Cudf_types.pkgname -> string * string option
 
 (** return the real version associated to a Cudf package *)
-val get_real_version : tables -> Cudf_types.pkgname * Cudf_types.version ->
-  (Dose_pef.Packages_types.name *
-   Dose_pef.Packages_types.architecture option *
-   Dose_pef.Packages_types.version)
+val get_real_version :
+  tables ->
+  Cudf_types.pkgname * Cudf_types.version ->
+  Dose_pef.Packages_types.name
+  * Dose_pef.Packages_types.architecture option
+  * Dose_pef.Packages_types.version
 
 val get_essential :
   ?options:options -> tables -> (Cudf_types.vpkglist * Cudf.package list) list
@@ -64,7 +75,8 @@ val get_essential :
    - Mapping APT request.
    @param inst : set the {i Installed} cudf field
 *)
-val tocudf : tables -> ?options:options -> ?inst:bool -> Packages.package -> Cudf.package
+val tocudf :
+  tables -> ?options:options -> ?inst:bool -> Packages.package -> Cudf.package
 
 (** declare the Cudf preamble used by cudf. Namely, debcudf add :
     - a property named {b Number} of type string containing the original debian version

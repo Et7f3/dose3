@@ -15,7 +15,6 @@
 (*                                                                            *)
 (******************************************************************************)
 
-
 (** Functions for manipulating and comparing Debian version strings.
     Compliant with Debian policy version 3.9.2. and Debian developers
     reference version 3.4.6 *)
@@ -66,22 +65,23 @@ val compare : string -> string -> int
     or revision (if non-native vesion).
 *)
 type version_analysis =
-  | Native of string*string*string            (** epoch,upstream,binnmu *)
-  | NonNative of string*string*string*string  (** epoch,upstream,revision,binnmu *)
+  | Native of string * string * string  (** epoch,upstream,binnmu *)
+  | NonNative of string * string * string * string
+      (** epoch,upstream,revision,binnmu *)
 
 (** decompose a version string *)
-val decompose: string -> version_analysis
+val decompose : string -> version_analysis
 
 (** recompose a decomposed version string. For all v:
     [equal(v,compose(decompose v)) = true].  There may, however, be
     small syntactic differences between [v] and [compose(decompose v)] *)
-val compose: version_analysis -> string 
+val compose : version_analysis -> string
 
 (** return a version without its epoch and without its binNMU part *)
-val strip_epoch_binnmu: string -> version_analysis
+val strip_epoch_binnmu : string -> version_analysis
 
 (** return a version without its epoch part *)
-val strip_epoch: string -> version_analysis
+val strip_epoch : string -> version_analysis
 
 (** return the epoch component of the version. empty string if none *)
-val extract_epoch: string -> string
+val extract_epoch : string -> string

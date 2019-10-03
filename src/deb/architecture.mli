@@ -24,7 +24,7 @@
     "all". The host architecure is one that may be obtained by
     running "dpkg-architecture -qDEB_HOST_ARCH").
 *)
-val src_matches_arch: string -> string -> bool
+val src_matches_arch : string -> string -> bool
 
 (** fill the lookup table mapping debian architectures to debian tuples
  *  this function is called by src_matches_arch without supplying anything
@@ -32,4 +32,5 @@ val src_matches_arch: string -> string -> bool
  *  then they can point to a file like /usr/share/dpkg/tupletable or
  *  /usr/share/dpkg/cputable respectively.
  *)
-val read_tupletable: ?ttfile:(string option) -> ?ctfile:(string option) -> unit -> unit
+val read_tupletable :
+  ?ttfile:string option -> ?ctfile:string option -> unit -> unit

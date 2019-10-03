@@ -11,7 +11,7 @@
 (**************************************************************************************)
 
 (** return a unique identifier based on random numbers *)
-val uuid: unit -> string
+val uuid : unit -> string
 
 (** return a list of unique elements. This algorithm runs in
     O(n) but is not stable . elements are returned in reverse order *)
@@ -34,13 +34,13 @@ module type Messages = sig
 
   (** create a new message handle with label t .
    * Printing is disabled per default *)
-  val create: ?enabled:bool -> label -> t
+  val create : ?enabled:bool -> label -> t
 
   (** Print the message on [stderr] if the Util module has been
    * set to verbose using the function [make_verbose] and
    * either the handle [t] is enable or all handles were enabled with
    * the function [all_enabled] *)
-  val eprintf: ?raw : bool -> t -> ('a, unit, string, unit) format4 -> 'a
+  val eprintf : ?raw:bool -> t -> ('a, unit, string, unit) format4 -> 'a
 
   (** [enable l] the handle with label [l] *)
   val enable : label -> unit
@@ -64,8 +64,11 @@ end
  * Info messages are enabled per default. Debug and Warning messages
  * must be enabled explicitely *)
 module Debug : Messages
+
 module Warning : Messages
+
 module Info : Messages
+
 module Notice : Messages
 
 (** Ex : To use the Message framework, you should declare three functions
@@ -89,19 +92,27 @@ include Util.Logging(struct let label = label end) ;;
 
 *)
 
-module Logging :
-  functor (X : sig val label : string end) ->
-    sig
-      val it : Info.t
-      val info : ('a, unit, string, unit) format4 -> 'a
-      val nt : Notice.t
-      val notice : ('a, unit, string, unit) format4 -> 'a
-      val wt : Warning.t
-      val warning : ('a, unit, string, unit) format4 -> 'a
-      val dt : Debug.t
-      val debug : ('a, unit, string, unit) format4 -> 'a
-      val fatal : ('a, unit, string, 'b) format4 -> 'a
-    end
+module Logging (X : sig
+  val label : string
+end) : sig
+  val it : Info.t
+
+  val info : ('a, unit, string, unit) format4 -> 'a
+
+  val nt : Notice.t
+
+  val notice : ('a, unit, string, unit) format4 -> 'a
+
+  val wt : Warning.t
+
+  val warning : ('a, unit, string, unit) format4 -> 'a
+
+  val dt : Debug.t
+
+  val debug : ('a, unit, string, unit) format4 -> 'a
+
+  val fatal : ('a, unit, string, 'b) format4 -> 'a
+end
 
 (** ProgressBars are printed immediately on stderr.
  * To be used, the **must** be created outside the functions where
@@ -112,7 +123,7 @@ module Progress : sig
 
   (** [create "barname"] : create new a progress bar labelled "barname".
       The progress bar is disabled by default *)
-  val create: ?enabled:bool -> ?total:int -> ?unbounded:bool -> label -> t
+  val create : ?enabled:bool -> ?total:int -> ?unbounded:bool -> label -> t
 
   (** [enable "barname"] : enable the progress bar with label "barname" *)
   val enable : label -> unit
@@ -127,10 +138,10 @@ module Progress : sig
   val progress : ?i:int -> t -> unit
 
   (** reset the progress bar *)
-  val reset: t -> unit
+  val reset : t -> unit
 
   (** return the labels of all available progress bar *)
-  val available: unit -> label list
+  val available : unit -> label list
 end
 
 (** Timers are printed all at once by the [dump] function on stderr.
@@ -139,44 +150,47 @@ module Timer : sig
   type t
 
   (** [create s] create and register a new logger named [s] *)
-  val create: ?enabled:bool -> string -> t
+  val create : ?enabled:bool -> string -> t
 
   (** [enable "barname"] : enable the progress bar with label "barname" *)
   val enable : label -> unit
 
-  val pp_timer: Format.formatter -> t -> unit
+  val pp_timer : Format.formatter -> t -> unit
 
   (** print all timers that are enabled *)
-  val dump: Format.formatter -> unit -> unit
+  val dump : Format.formatter -> unit -> unit
 
-  val start: t -> unit
+  val start : t -> unit
 
-  val stop: t -> 'a -> 'a
+  val stop : t -> 'a -> 'a
 
   (** return the labels of all available progress bar *)
   val available : unit -> label list
 end
 
 module IntHashtbl : Hashtbl.S with type key = int
+
 module IntPairHashtbl : Hashtbl.S with type key = int * int
+
 module StringHashtbl : Hashtbl.S with type key = string
+
 module StringPairHashtbl : Hashtbl.S with type key = string * string
 
 (** hash consing for strings *)
-val hashcons: string StringHashtbl.t -> string -> string
+val hashcons : string StringHashtbl.t -> string -> string
+
 val hits : int ref
+
 val miss : int ref
 
 val range : int -> int -> int list
 
 val string_of_list :
-  ?delim:(string * string) -> ?sep: string ->
-    ('a -> string) -> 'a list -> string
+  ?delim:string * string -> ?sep:string -> ('a -> string) -> 'a list -> string
 
 (** associate a sat solver variable to a package id *)
 class type projection =
   object
-
     (** add a package id to the map *)
     method add : int -> unit
 

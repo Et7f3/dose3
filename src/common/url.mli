@@ -10,24 +10,26 @@
 (*  library, see the COPYING file for more information.                     *)
 (****************************************************************************)
 
-type debtypes = [ `Edsp | `Deb | `DebSrc ]
-type rpmtypes = [ `Synthesis | `Hdlist ]
-type othertypes = [ `Pef | `Csw | `Opam | `Npm ]
+type debtypes = [`Edsp | `Deb | `DebSrc]
 
-type filetypes = [ `Cudf | debtypes | rpmtypes | othertypes ]
+type rpmtypes = [`Synthesis | `Hdlist]
+
+type othertypes = [`Pef | `Csw | `Opam | `Npm]
+
+type filetypes = [`Cudf | debtypes | rpmtypes | othertypes]
 
 val supported_input_types : filetypes list
 
-type url = {
-  scheme : filetypes;
-  path   : string; (** db name or filename *)
-};;
+type url = {scheme : filetypes; path : string  (** db name or filename *)}
 
 (* parsing of a string as url. Raises Invalid_url in case of error *)
-val of_string: string -> url
-exception Invalid_url of string;;
+val of_string : string -> url
+
+exception Invalid_url of string
 
 (* printable representation of an url *)
-val to_string: url -> string
-val scheme_to_string: filetypes -> string
-val scheme_of_string: string -> filetypes
+val to_string : url -> string
+
+val scheme_to_string : filetypes -> string
+
+val scheme_of_string : string -> filetypes

@@ -16,9 +16,9 @@
 (******************************************************************************)
 
 open! ExtLib
-open Common
-open Algo
-open Doseparse
+open Dose_common
+open Dose_algo
+open Dose_doseparse
 
 module Options = struct
   open OptParse

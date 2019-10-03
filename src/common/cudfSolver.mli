@@ -1,4 +1,5 @@
 exception Error of string
+
 exception Unsat
 
 (** [execsolver] execute an external cudf solver.
@@ -9,6 +10,4 @@ exception Unsat
     raise UnSat or Error
 *)
 val execsolver :
-  string -> 
-    string ->
-      Cudf.cudf -> Cudf.preamble option * Cudf.universe
+  string -> string -> Cudf.cudf -> Cudf.preamble option * Cudf.universe

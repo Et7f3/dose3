@@ -1,6 +1,6 @@
 open ExtLib
-open Common
-module Version = Versioning.Debian
+open Dose_common
+module Version = Dose_versioning.Debian
 
 type tables = {
   units : (Packages.name, (int * string) list) Hashtbl.t;
@@ -45,7 +45,7 @@ let init_tables pkglist =
     temp_units ;
   tables
 
-let add_extra _ _ p = []
+let add_extra _ _ _ = []
 
 let get_cudf_version tables (n, v) =
   try
@@ -53,7 +53,7 @@ let get_cudf_version tables (n, v) =
     fst (List.find (fun (_, v1) -> v = v1) l)
   with Not_found -> 1
 
-let get_real_version tables (n, i) = Hashtbl.find tables.reverse i
+let get_real_version tables (_, i) = Hashtbl.find tables.reverse i
 
 let preamble = Cudf.default_preamble
 

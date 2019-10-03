@@ -12,10 +12,10 @@ B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/re
 B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/re/pcre
 B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/seq
 B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/stdlib-shims
-B ../_build/default/common/.dose_common.objs/byte
-B ../_build/default/npm/.dose_npm.objs/byte
-B ../_build/default/pef/.dose_pef.objs/byte
-B ../_build/default/versioning/.dose_versioning.objs/byte
+B ../../_build/default/src/common/.dose_common.objs/byte
+B ../../_build/default/src/npm/.dose_npm.objs/byte
+B ../../_build/default/src/pef/.dose_pef.objs/byte
+B ../../_build/default/src/versioning/.dose_versioning.objs/byte
 S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/benchmark
 S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/bytes
 S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/cudf

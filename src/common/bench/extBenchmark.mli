@@ -11,7 +11,7 @@
 (**************************************************************************************)
 
 (* a time-stamped collection of samples *)
-type benchmark 
+type benchmark
 
 (* create a time-stamped collection of samples *)
 val make_benchmark : Benchmark.samples -> benchmark
@@ -40,7 +40,7 @@ val parse_benchmark : string -> benchmark
 (** save a benchmark *)
 val save_benchmark : ?dirname:string -> benchmark -> unit
 
-(** parse all benchmarks in the benchmark's directory (.benchmark by default) *) 
+(** parse all benchmarks in the benchmark's directory (.benchmark by default) *)
 val parse_benchmarks : ?days:int -> ?dirname:string -> unit -> benchmark list
 
 (** pretty print a [Benchmark.sample] *)
@@ -51,4 +51,4 @@ val pp_benchmark : Format.formatter -> benchmark -> unit
  *)
 val pp_benchmarks : Format.formatter -> benchmark list -> unit
 
-val main : ( unit -> Benchmark.samples ) -> unit
+val main : (unit -> Benchmark.samples) -> unit

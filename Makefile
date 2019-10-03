@@ -30,7 +30,7 @@ all: libs apps man
 files=$(shell find src/ \( -name "*.ml" -o -name "*.mli"  -o -name "*.mlt" \) -type f -print)
 
 fmt:
-	ocamlformat --inplace ${files}
+	ocamlformat --enable-outside-detected-project --inplace ${files}
 
 apps: addnotrpm myocamlbuild.ml itarget $(BYTELIBS) $(OPTLIBS)
 	$(OCAMLBUILD) $(APPFLAGS) applications/apps.otarget

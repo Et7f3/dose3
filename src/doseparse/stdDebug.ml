@@ -13,7 +13,7 @@
 (**************************************************************************)
 
 open ExtLib
-open Common
+open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
@@ -22,7 +22,7 @@ include Util.Logging(struct let label = label end) ;;
 let enable_debug = function
   |0 -> () (* only warning messages : default *)
   |1 -> Util.Info.all_enabled ()
-  |2 -> 
+  |2 ->
       begin
         Util.Info.all_enabled ();
         Util.Notice.all_enabled ()
@@ -48,7 +48,7 @@ let all_quiet t =
 let enable_bars verbose l =
   if verbose then List.iter Util.Progress.enable l
 
-let enable_timers verbose l = 
+let enable_timers verbose l =
   at_exit (Util.Timer.dump Format.err_formatter);
   if verbose then List.iter Util.Timer.enable l
 ;;

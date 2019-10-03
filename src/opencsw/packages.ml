@@ -15,7 +15,7 @@
 module Pcre = Re_pcre
 
 open ExtLib
-open Common
+open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
@@ -78,7 +78,7 @@ let parse_paragraph pkg ch =
 
   begin
     let split s = ExtString.String.nsplit s "|" in
-    let catcherr a i = 
+    let catcherr a i =
       try begin match split a.(i) with ["none"] -> [] | l -> l end
       with Invalid_argument _ -> []
     in
@@ -87,7 +87,7 @@ let parse_paragraph pkg ch =
     debug line;
     Array.iteri (fun i s -> debug "%d : %s" i s) a ;
     *)
-    Some 
+    Some
       { pkg with
         name = a.(2);
         version = List.hd(Pcre.split ~rex:(Pcre.regexp ",") a.(1));
@@ -103,15 +103,15 @@ let rec parse_packages_rec acc ch =
     |Some par -> parse_packages_rec (par::acc) ch
   with Eof -> acc
 
-let parse_packages_in f ch =
+let parse_packages_in _f ch =
   parse_packages_rec [] ch
 
-let parse_packages f filename =
+let parse_packages _f filename =
   try
     let ch = Input.open_file filename in
     let l = parse_packages_rec [] ch in
     Input.close_ch ch; l
   with Input.File_empty -> []
 
-let input_raw ?(extras=[]) files = input_raw_priv parse_packages files
+let input_raw files = input_raw_priv parse_packages files
 

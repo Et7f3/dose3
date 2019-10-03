@@ -31,15 +31,15 @@ val hash : Cudf.package -> int
 
 (** Sort function: sorts a CUDF packages list using the
     standard CUDF comparison operator in ascending order. *)
-val sort : ?asc: bool -> Cudf.package list -> Cudf.package list
+val sort : ?asc:bool -> Cudf.package list -> Cudf.package list
 
 (** {2 Data structures} *)
 
 (** Specialized hashtable for CUDF packages. *)
-module Cudf_hashtbl : (Hashtbl.S with type key = Cudf.package)
+module Cudf_hashtbl : Hashtbl.S with type key = Cudf.package
 
 (** Specialized set data structure for CUDF packages. *)
-module Cudf_set : (Set.S with type elt = Cudf.package)
+module Cudf_set : Set.S with type elt = Cudf.package
 
 (** Convert a list of CUDF packages to a set of CUDF packages. *)
 val to_set : Cudf_set.elt list -> Cudf_set.t
@@ -64,7 +64,8 @@ type ctable = (int, int list ref) ExtLib.Hashtbl.t
 val init_conflicts : Cudf.universe -> ctable
 
 (** Return the list of packages in conflict with the given package *)
-val who_conflicts : ctable -> Cudf.universe -> Cudf.package -> Cudf.package list
+val who_conflicts :
+  ctable -> Cudf.universe -> Cudf.package -> Cudf.package list
 
 (** Like who_provides but returns a list of cudf ids *)
 val resolve_vpkg_int : Cudf.universe -> Cudf_types.vpkg -> int list
@@ -73,6 +74,7 @@ val resolve_vpkg_int : Cudf.universe -> Cudf_types.vpkg -> int list
 val resolve_vpkgs_int : Cudf.universe -> Cudf_types.vpkglist -> int list
 
 (** {2 Functions to encode and decode strings. } *)
+
 (* TODO: What are these functions doing in this module? *)
 
 (** Encode a string.
@@ -111,10 +113,10 @@ val decode : string -> string
 
 (** Returns a list of packages containing for each package [n]
     most recent version (default the latest version) *)
-val latest: ?n : int -> Cudf.package list -> Cudf.package list
+val latest : ?n:int -> Cudf.package list -> Cudf.package list
 
 (** Set of strings *)
-module StringSet : (Set.S with type elt = ExtLib.String.t)
+module StringSet : Set.S with type elt = ExtLib.String.t
 
 (** Returns the set of all names in the given universe *)
 val pkgnames : Cudf.universe -> StringSet.t
@@ -131,7 +133,8 @@ val get_property : string -> Cudf.package -> string
 val is_essential : Cudf.package -> bool
 
 (** build a hash table that associates (package name, String version) to CUDF packages *)
-val realversionmap : Cudf.package list ->
+val realversionmap :
+  Cudf.package list ->
   (Cudf_types.pkgname * string, Cudf.package) ExtLib.Hashtbl.t
 
 (** Return the unique cudf id of a package in a universe *)
@@ -168,6 +171,7 @@ val normalize_set : int list -> int list
 val string_of : (Format.formatter -> 'a -> 'b) -> 'a -> string
 
 val pp_version : Format.formatter -> Cudf.package -> unit
+
 val pp_package : Format.formatter -> Cudf.package -> unit
 
 (** return a string containg either the value of the optional field
@@ -179,7 +183,9 @@ val string_of_package : Cudf.package -> string
 
 (* Function signature for cudf package printer. The output represents
    a triple (name, version, (field name, value) list *)
-type pp = Cudf.package -> string * string option * string * (string * (string * bool)) list
+type pp =
+  Cudf.package ->
+  string * string option * string * (string * (string * bool)) list
 
 (** [pp ?decode from_cudf pkg] package pretty printer.
     [from_cudf] a function that gets a (name,cudfversion) pair and returns a (name,realversion).
@@ -193,8 +199,9 @@ type pp = Cudf.package -> string * string option * string * (string * (string * 
 *)
 val pp :
   (Cudf_types.pkgname * Cudf_types.version -> string * string option * string) ->
-  ?fields: string list->
-  ?decode: (Cudf_types.pkgname -> string) -> pp
+  ?fields:string list ->
+  ?decode:(Cudf_types.pkgname -> string) ->
+  pp
 
 (** [default_pp] default package printer. Extracts string values from a
     cudf package : Name, Version, Fields. Where Fields is a list of
@@ -209,4 +216,4 @@ val pp_vpkg : pp -> Format.formatter -> Cudf_types.vpkg -> unit
 val pp_vpkglist : pp -> Format.formatter -> Cudf_types.vpkglist -> unit
 
 (** Compute the depenency cone of a list of packages *)
-val cone: Cudf.universe -> Cudf.package list -> Cudf.package list
+val cone : Cudf.universe -> Cudf.package list -> Cudf.package list
