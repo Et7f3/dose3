@@ -13,10 +13,9 @@
 (**************************************************************************)
 
 open ExtLib
-open Common
-open Debian
-open DoseparseNoRpm
-open Criteria_types
+open Dose_common
+open Dose_debian
+open Dose_doseparse
 
 module Pcre = Re_pcre
 
@@ -80,12 +79,12 @@ let rec input_all_lines acc chan =
   try input_all_lines ((input_line chan)::acc) chan
   with End_of_file -> acc
 
-let solver_dir = 
-  try Sys.getenv("CUDFSOLVERS") 
+let solver_dir =
+  try Sys.getenv("CUDFSOLVERS")
   with Not_found -> "/usr/share/cudf/solvers"
 ;;
 
-let apt_get_cmdline = 
+let apt_get_cmdline =
   try Sys.getenv("APT_GET_CUDF_CMDLINE")
   with Not_found -> ""
 ;;
@@ -98,12 +97,12 @@ let pp_pkg fmt (p,univ) =
     Format.fprintf fmt "Package: %s\n" pkg#name;
     Format.fprintf fmt "Version: %s\n" pkg#version;
     Format.fprintf fmt "Architecture: %s\n" pkg#architecture;
-  with Not_found -> 
+  with Not_found ->
     fatal "apt-cudf internal error (Not found : %s)"
       (Printf.sprintf "%s=%d" p.Cudf.package p.Cudf.version)
 
 let pp_pkg_list fmt (l,univ) =
-  try 
+  try
     Format.fprintf fmt "%s" (
       String.concat ", "
       (List.map (fun p ->
@@ -152,12 +151,12 @@ let parse_conf_file fname =
   let lexbuf = Lexing.from_channel ic in
   try
     let stanzas = Cudf_822_parser.doc_822 Cudf_822_lexer.token_822 lexbuf in
-    let r = 
+    let r =
       List.flatten (
-        List.map (fun stanza -> 
+        List.map (fun stanza ->
           let (_,sl) = List.assoc "solver" stanza in
           let l = List.map (fun (k, (_loc, v)) -> (k,v)) stanza in
-          List.filter_map (fun s -> 
+          List.filter_map (fun s ->
             let x = ExtString.String.strip s in
             if x = "" then None else
             let mapl =
@@ -176,7 +175,7 @@ let parse_conf_file fname =
             in
             Some(x,mapl)
           ) (ExtString.String.nsplit sl ",")
-        ) stanzas 
+        ) stanzas
       )
     in
     close_in ic; r
@@ -192,7 +191,7 @@ let parse_conf_file fname =
   5. default criteria for "*" default solver in /etc/apt-cudf.conf and EDSP action
   6. default criteria as hardcoded above for given EDSP action
   7. hardcoded paranoid criteria *)
-let choose_criteria ~criteria ~criteria_plain ~conffile solver request =
+let choose_criteria ~conffile solver request =
   let conf =
     if Sys.file_exists conffile then
       parse_conf_file conffile
@@ -201,12 +200,12 @@ let choose_criteria ~criteria ~criteria_plain ~conffile solver request =
   let default_criteria =
     let critnames = List.map fst Criteria.default_criteria in
     (* test if this stanza has all the required fields *)
-    try 
+    try
       let c = List.assoc solver conf in
       List.iter (fun f -> ignore(List.assoc f c)) critnames;
       c
     with Not_found ->
-      try 
+      try
         let c = List.assoc "*" conf in
         List.iter (fun f -> ignore(List.assoc f c)) critnames;
         c
@@ -291,24 +290,24 @@ let main () =
   debug "CUDFSOLVERS=%s" solver_dir;
   (* debug "TMPDIR=%s" waiting for ocaml 4.0 *)
 
-  if OptParse.Opt.is_set Options.criteria && 
+  if OptParse.Opt.is_set Options.criteria &&
   OptParse.Opt.is_set Options.criteria_plain then
     fatal "--criteria cannot be specified together with --criteria-plain";
 
-  let ch = 
-    match args with 
+  let ch =
+    match args with
     |[] -> (IO.input_channel stdin)
-    |file::_ -> Input.open_file file 
+    |file::_ -> Input.open_file file
   in
-  
+
   Util.Timer.start timer1;
   let (request,pkglist) = Edsp.input_raw_ch ch in
 
-  let (native_arch,foreign_archs) = 
+  let (native_arch,foreign_archs) =
     StdUtils.get_architectures
       request.Edsp.architecture
       request.Edsp.architectures
-      (OptParse.Opt.opt Options.native_arch) 
+      (OptParse.Opt.opt Options.native_arch)
       (OptParse.Opt.opt Options.foreign_archs)
   in
 
@@ -317,13 +316,13 @@ let main () =
     |"" -> request
     |_ -> begin
       let apt_req = Apt.parse_request_apt apt_get_cmdline in
-      Edsp.from_apt_request native_arch 
+      Edsp.from_apt_request native_arch
         {request with Edsp.install = []; remove = []} apt_req
     end
   in
 
   Util.Timer.stop timer1 ();
-  
+
   if args <> [] then Input.close_ch ch;
 
   let solver =
@@ -343,14 +342,14 @@ let main () =
   with the correct values *)
   let regexfields = Hashtbl.create (10) in
   let criteria =
-    let criteria = OptParse.Opt.opt Options.criteria in
-    let criteria_plain = OptParse.Opt.opt Options.criteria_plain in
+    (*let criteria = OptParse.Opt.opt Options.criteria in
+    let criteria_plain = OptParse.Opt.opt Options.criteria_plain in*)
     let conffile = OptParse.Opt.get Options.conffile in
-    match choose_criteria ~criteria ~criteria_plain ~conffile solver request with
+    match choose_criteria ~conffile solver request with
     |ExtCrit c ->
       Criteria.iter (fun (cudffieldname,fieldname,regexstring,compiled_re) ->
         let hashtblval = (fieldname,regexstring,compiled_re) in
-        try 
+        try
           (* mapping already exists in hashtable *)
           begin match Hashtbl.find regexfields cudffieldname with
           |v when v = hashtblval -> ()
@@ -365,7 +364,7 @@ let main () =
       Criteria.to_string ~solver c
     |PlainCrit c -> c
   in
-  (* small hack to avoid another global variable. 
+  (* small hack to avoid another global variable.
    * We set criteria_plain to relect to actual criteria used
    * by the solver and to print it in case of error *)
   OptParse.Opt.set Options.criteria_plain criteria;
@@ -382,12 +381,12 @@ let main () =
   in
 
   let options = {
-    Debcudf.default_options with 
+    Debcudf.default_options with
     Debcudf.native = native_arch;
     Debcudf.foreign = foreign_archs }
-  in 
+  in
   let univ = Hashtbl.create (2*(List.length pkglist)-1) in
-  let cudfpkglist = 
+  let cudfpkglist =
     List.filter_map (fun pkg ->
       let p = Edsp.tocudf tables ~options pkg in
       (* for each regex, check if the current package has the requested field
@@ -410,26 +409,26 @@ let main () =
                   { acc with Cudf.pkg_extra = (cudffield, `Int 1) :: acc.Cudf.pkg_extra }
               | false -> acc (* no match *)
             end
-        ) regexfields p 
+        ) regexfields p
       in
       if not(Hashtbl.mem univ (p.Cudf.package,p.Cudf.version)) then begin
         Hashtbl.add univ (p.Cudf.package,p.Cudf.version) pkg;
         Some p
       end else begin
-        warning "Duplicated package (same version, name and architecture) : (%s,%s,%s)" 
+        warning "Duplicated package (same version, name and architecture) : (%s,%s,%s)"
           pkg#name pkg#version pkg#architecture;
         None
       end
-    ) pkglist 
+    ) pkglist
   in
-  let universe = 
+  let universe =
     try Cudf.load_universe cudfpkglist
     with Cudf.Constraint_violation s ->
       fatal "(CUDF) Malformed universe %s" s
   in
 
   (*
-  let universe = 
+  let universe =
     let initialsize = (2 * (List.length pkglist) - 1 ) in
     let univcache = Cudf.empty_universe ~size:initialsize () in
     List.iter (fun pkg ->
@@ -462,9 +461,9 @@ let main () =
 
   if OptParse.Opt.get Options.dump then begin
     info "Append cudf request to %s\n" cudfdump;
-    let oc = open_out_gen 
+    let oc = open_out_gen
       [Open_wronly; Open_append; Open_creat; Open_text]
-      0o666 cudfdump 
+      0o666 cudfdump
     in
     Printf.fprintf oc "\n";
     (* write regex field name mapping as comment *)
@@ -483,14 +482,14 @@ let main () =
     exit 0
   end;
 
-  let check_request ((pre,universe,request) as cudf) =
-    let dummy = { Algo.Depsolver.dummy_request with
+  let check_request cudf =
+    let dummy = { Dose_algo.Depsolver.dummy_request with
       Cudf.depends =
         List.map (fun (_,pkglist) ->
           List.map (fun pkg ->
             (pkg.Cudf.package,Some(`Eq,pkg.Cudf.version))
           ) pkglist
-        ) (Debcudf.get_essential tables); 
+        ) (Debcudf.get_essential tables);
       Cudf.pkg_extra = [
         ("apt-id", `Int 1);
         ("apt-pin", `Int 500);
@@ -506,7 +505,7 @@ let main () =
     |"internal" ->
         #ifdef HASMCCS
         begin
-          let (u,dr) = Algo.Depsolver.add_dummy universe request dummy in
+          let (u,dr) = Dose_algo.Depsolver.add_dummy universe request dummy in
           let dr_constr = (dr.Cudf.package,Some (`Eq,dr.Cudf.version)) in
           let r = { request with Cudf.install = dr_constr::request.Cudf.install } in
           Cudf_printer.pp_preamble stdout pre;
@@ -515,31 +514,31 @@ let main () =
           Printf.fprintf stdout "\n";
           Cudf_printer.pp_request stdout r;
           (* match Mccs.resolve_cudf ~verbose:false "-removed,-changed" (pre,u,r) with
-          |None -> *) Algo.Depsolver.Unsat None
-          (* |Some(p,s) -> Algo.Depsolver.Sat(Some p,s) *)
+          |None -> *) Dose_algo.Depsolver.Unsat None
+          (* |Some(p,s) -> Dose_algo.Depsolver.Sat(Some p,s) *)
         end
         #else
           raise Not_found
         #endif
     |_ ->
       let exec_pat = fst (parse_solver_spec (Filename.concat solver_dir solver)) in
-      Algo.Depsolver.check_request ~cmd:exec_pat ~dummy ~criteria ~explain cudf
+      Dose_algo.Depsolver.check_request ~cmd:exec_pat ~dummy ~criteria ~explain cudf
   in
 
-  let solpre,soluniv = 
+  let _solpre,soluniv =
     match check_request cudf with
-    |Algo.Depsolver.Error s -> fatal "%s" s
-    |Algo.Depsolver.Unsat None -> begin
+    |Dose_algo.Depsolver.Error s -> fatal "%s" s
+    |Dose_algo.Depsolver.Unsat None -> begin
       doseexit ();
       Format.printf "Message: (UNSAT) No Solutions according to the given preferences@.";
       exit 0
     end
-    |Algo.Depsolver.Unsat Some d -> begin
+    |Dose_algo.Depsolver.Unsat Some _ -> begin
       doseexit ();
       Format.printf "Message: (UNSAT) No Solutions according to the given preferences@.";
       exit 0
     end
-    |Algo.Depsolver.Sat s -> s
+    |Dose_algo.Depsolver.Sat s -> s
   in
 
   if OptParse.Opt.get Options.dump then begin
@@ -571,12 +570,12 @@ let main () =
     Format.printf "Install: %a@." pp_pkg (pkg,univ)
   ) install;
 
-  (* Print also all packages that are were requested, but don't show up in the 
+  (* Print also all packages that are were requested, but don't show up in the
    * diff because already installed *)
   List.iter (fun (n,c) ->
-    List.iter (fun pkg -> 
+    List.iter (fun pkg ->
       empty := false;
-      if CudfAdd.Cudf_hashtbl.mem cache pkg then () 
+      if CudfAdd.Cudf_hashtbl.mem cache pkg then ()
       else begin
         CudfAdd.Cudf_hashtbl.add cache pkg ();
         Format.printf "Install: %a@." pp_pkg (pkg,univ);
@@ -611,18 +610,18 @@ let main () =
 
     if summary.install <> [] then
       Format.printf "Installed: %a@." pp_pkg_list (summary.install,univ);
-    if summary.remove <> [] then 
+    if summary.remove <> [] then
       Format.printf "Removed: %a@." pp_pkg_list (summary.remove,univ);
-    if summary.upgrade <> [] then 
+    if summary.upgrade <> [] then
       Format.printf "Upgraded: %a@." pp_pkg_list_tran (summary.upgrade,univ);
-    if summary.downgrade <> [] then 
+    if summary.downgrade <> [] then
       Format.printf "Downgraded: %a@." pp_pkg_list_tran (summary.downgrade,univ);
-    if summary.notchange <> [] && (OptParse.Opt.get Options.verbose) >= 1 then 
+    if summary.notchange <> [] && (OptParse.Opt.get Options.verbose) >= 1 then
       Format.printf "UnChanged: %a@." pp_pkg_list (summary.notchange,univ);
 
   end;
 
-  if !empty then 
+  if !empty then
     print_progress ~i:100 "No packages removed or installed";
 ;;
 

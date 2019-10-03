@@ -1,18 +1,23 @@
-#this is a forward reference to the target all below
-all: all
 
-#SHELL=/bin/bash
-include Makefile.config
+all: apps man
 
 DIST_DIR = $(NAME)-$(VERSION)
 DIST_TARBALL = $(DIST_DIR).tar.gz
 
-all: apps man
-
 apps:
-	@dune build src/applications/distcheck.exe
+	@dune build \
+		src/applications/distcheck.exe \
+		src/applications/ceve.exe \
+		src/applications/challenged.exe \
+		src/applications/outdated.exe \
+		src/applications/aptCudf.exe \
+		src/applications/debCoinstall.exe
 	@cp _build/default/src/applications/distcheck.exe dose-distcheck
+	@cp _build/default/src/applications/challenged.exe dose-challenged
+	@cp _build/default/src/applications/outdated.exe dose-outdated
 	@cp _build/default/src/applications/ceve.exe dose-ceve
+	@cp _build/default/src/applications/aptCudf.exe apt-cudf
+	@cp _build/default/src/applications/debCoinstall.exe dose-deb-coinstall
 
 files=$(shell find src/ \( -name "*.ml" -o -name "*.mli"  -o -name "*.mlt" \) -type f -print)
 

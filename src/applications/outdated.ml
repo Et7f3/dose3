@@ -15,9 +15,10 @@
 (**************************************************************************)
 
 open ExtLib
-open Common
-open Algo
-open DoseparseNoRpm
+open Dose_common
+open Dose_algo
+open Dose_doseparse
+(*open DoseparseNoRpm*)
 
 module Options = struct
   open OptParse
@@ -53,7 +54,7 @@ let sync (sn,sv,v) p =
   }
 ;;
 
-let dummy (sn,sv) pkg number equivs version =
+let dummy (sn,_sv) pkg number equivs version =
   {Cudf.default_package with
    Cudf.package = pkg.Cudf.package;
    version = version;
@@ -83,7 +84,7 @@ let evalsel getv target constr =
   |`Hi v -> evalsel ((getv v) + 1) constr
   |`Lo v -> evalsel ((getv v) - 1) constr
   |`Eq v -> evalsel (getv v) constr
-  |`In (v1,v2) -> evalsel ((getv v2) - 1) constr
+  |`In (_,v2) -> evalsel ((getv v2) - 1) constr
 ;;
 
 let version_of_target getv = function
@@ -94,19 +95,19 @@ let version_of_target getv = function
 
 (* the repository should contain only the most recent version of each
    package *)
-let future ~options ?(checklist=[]) repository =
+let future ~options repository =
 
   let worktable = Hashtbl.create 1024 in
   let version_acc = ref [] in
-  let constraints_table = Debian.Evolution.constraints repository in
+  let constraints_table = Dose_debian.Evolution.constraints repository in
   let realpackages = Hashtbl.create 1023 in
 
-  let clusters = Debian.Debutil.cluster repository in
+  let clusters = Dose_debian.Debutil.cluster repository in
 
   (* for each cluster, I associate to it: its discriminants,
    * its cluster name and its binary version *)
-  let cluster_iter (sn,sv) l =
-    List.iter (fun (version,realversion,cluster) ->
+  let cluster_iter (sn,_sv) l =
+    List.iter (fun (version,_realversion,cluster) ->
       List.iter (fun pkg ->
         let pn = pkg#name in
         if Hashtbl.mem constraints_table pn then begin
@@ -114,7 +115,7 @@ let future ~options ?(checklist=[]) repository =
         end
       ) cluster;
       let (versionlist, constr) =
-        Debian.Evolution.all_ver_constr constraints_table cluster
+        Dose_debian.Evolution.all_ver_constr constraints_table cluster
       in
       version_acc := versionlist @ !version_acc;
       Hashtbl.add worktable (sn,version) (cluster,versionlist,constr)
@@ -126,16 +127,16 @@ let future ~options ?(checklist=[]) repository =
    * cluster by itself *)
   let constraints_iter name constr =
     if not(Hashtbl.mem realpackages name) then begin
-      let vl = Debian.Evolution.all_versions constr in
-      let pkg = new Debian.Packages.package 
-        ~name:("",Some name) ~version:("",Some "1") ~architecture:("",Some "all") [] 
+      let vl = Dose_debian.Evolution.all_versions constr in
+      let pkg = new Dose_debian.Packages.package
+        ~name:("",Some name) ~version:("",Some "1") ~architecture:("",Some "all") []
       in
       let cluster = [pkg] in
       version_acc := vl @ !version_acc;
       Hashtbl.add worktable (name,"1") (cluster,vl,constr)
     end
   in
-  
+
 (*  if List.length checklist > 0 then
     List.iter (fun (sn,_,sv) ->
       begin try cluster_iter (sn,sv) (Hashtbl.find clusters (sn,sv)) with Not_found -> () end;
@@ -153,17 +154,17 @@ let future ~options ?(checklist=[]) repository =
   info "Total Names: %d" (Hashtbl.length worktable);
   info "Total versions: %d" (List.length versionlist);
 
-  let tables = Debian.Debcudf.init_tables ~options ~step:2 ~versionlist repository in
-  let getv v = Debian.Debcudf.get_cudf_version tables ("",v) in
+  let tables = Dose_debian.Debcudf.init_tables ~options ~step:2 ~versionlist repository in
+  let getv v = Dose_debian.Debcudf.get_cudf_version tables ("",v) in
 
-  let pkgset = 
+  let pkgset =
     Hashtbl.fold (fun (sn,version) (cluster,vl,constr) acc0 ->
       let sync_index = ref 1 in
-      let discr = Debian.Evolution.discriminant (evalsel getv) vl constr in
-      let acc0 = 
+      let discr = Dose_debian.Evolution.discriminant (evalsel getv) vl constr in
+      let acc0 =
         (* by assumption all packages in a cluster are syncronized *)
         List.fold_left (fun l pkg ->
-          let p = Debian.Debcudf.tocudf ~options tables pkg in
+          let p = Dose_debian.Debcudf.tocudf ~options tables pkg in
           CudfAdd.Cudf_set.add (sync (sn,version,1) p) l
         ) acc0 cluster
       in
@@ -171,13 +172,13 @@ let future ~options ?(checklist=[]) repository =
       List.fold_left (fun acc1 (target,equiv) ->
         incr sync_index;
         List.fold_left (fun acc2 pkg ->
-          let p = Debian.Debcudf.tocudf ~options tables pkg in
+          let p = Dose_debian.Debcudf.tocudf ~options tables pkg in
           let pv = p.Cudf.version in
 
-          let target = Debian.Evolution.align pkg#version target in
+          let target = Dose_debian.Evolution.align pkg#version target in
           let newv = version_of_target getv target in
-          let number = Debian.Evolution.string_of_range target in
-          let equivs = List.map Debian.Evolution.string_of_range equiv in
+          let number = Dose_debian.Evolution.string_of_range target in
+          let equivs = List.map Dose_debian.Evolution.string_of_range equiv in
 
           if newv > pv then begin
             let d = dummy (sn,version) p number equivs newv in
@@ -198,33 +199,32 @@ let future ~options ?(checklist=[]) repository =
 
   universe, tables
 ;;
- 
-let outdated 
-  ?(dump=false) 
-  ?(failure=false) 
-  ?(explain=false) 
+
+let outdated
+  ?(dump=false)
+  ?(failure=false)
+  ?(explain=false)
   ?(summary=false)
-  ?(checklist=None) 
   ~options repository =
 
   let universe, tables = future ~options repository in
- 
+
   let universe_size = Cudf.universe_size universe in
   info "Total future: %d" universe_size;
 
   if dump then begin
-    Cudf_printer.pp_preamble stdout Debian.Debcudf.preamble;
+    Cudf_printer.pp_preamble stdout Dose_debian.Debcudf.preamble;
     print_newline ();
     Cudf_printer.pp_universe stdout universe;
     exit(0)
   end;
-      
+
   let checklist =
-    let to_cudf (p,v) = (p,Debian.Debcudf.get_cudf_version tables (p,v)) in
+    let to_cudf (p,v) = (p,Dose_debian.Debcudf.get_cudf_version tables (p,v)) in
     if OptParse.Opt.is_set Options.checkonly then begin
       List.flatten (
         List.map (fun ((n,a),c) ->
-          let (name,filter) = Pef.Pefcudf.pefvpkg to_cudf ((n,a),c) in
+          let (name,filter) = Dose_pef.Pefcudf.pefvpkg to_cudf ((n,a),c) in
           Cudf.lookup_packages ~filter universe name
         ) (OptParse.Opt.get Options.checkonly)
       )
@@ -232,22 +232,22 @@ let outdated
   in
 
   let pp pkg =
-    let (p,a) = 
-      let (n,a) = Debian.Debcudf.get_real_name pkg.Cudf.package in
+    let (p,a) =
+      let (n,a) = Dose_debian.Debcudf.get_real_name pkg.Cudf.package in
       if String.starts_with n "src/" then
         (Printf.sprintf "Source conflict (%s)" n,a)
       else (n,a)
     in
-    let v = 
+    let v =
       if pkg.Cudf.version > 0 then begin
-        if String.starts_with pkg.Cudf.package "src/" then 
+        if String.starts_with pkg.Cudf.package "src/" then
           string_of_int pkg.Cudf.version
-        else 
+        else
           try Cudf.lookup_package_property pkg "number"
           with Not_found ->
             if (pkg.Cudf.version mod 2) = 1 then
               let (_,_,v) =
-                Debian.Debcudf.get_real_version tables 
+                Dose_debian.Debcudf.get_real_version tables
                 (pkg.Cudf.package,pkg.Cudf.version)
               in v
             else
@@ -269,10 +269,10 @@ let outdated
   if failure then Format.fprintf fmt "@[<v 1>report:@,";
 
   let results = Diagnostic.default_result universe_size in
-  let callback d = 
+  let callback d =
     if summary then Diagnostic.collect results d ;
     if failure then
-      Diagnostic.fprintf ~pp ~failure ~explain fmt d 
+      Diagnostic.fprintf ~pp ~failure ~explain fmt d
   in
 
   let broken =
@@ -291,11 +291,11 @@ let outdated
     Format.fprintf fmt "@[%a@]@." (Diagnostic.pp_summary ~pp ()) results;
 
   results
-;; 
+;;
 
 let main () =
   let args = OptParse.OptParser.parse_argv Options.options in
-  let options = 
+  let options =
     match Option.get (Options.set_options `Deb) with
     |StdOptions.Deb o -> o
     |_ -> fatal "impossible"
@@ -308,26 +308,26 @@ let main () =
     ["Algo.Depsolver.solver"; "Algo.Depsolver.init" ] ;
   StdDebug.all_quiet (OptParse.Opt.get Options.quiet);
 
-  let checklist = OptParse.Opt.opt Options.checkonly in
+  (*let checklist = OptParse.Opt.opt Options.checkonly in*)
   let failure = OptParse.Opt.get Options.failure in
   let explain = OptParse.Opt.get Options.explain in
   let summary = OptParse.Opt.get Options.summary in
   let dump = OptParse.Opt.get Options.dump in
 
   let archs =
-    if not(Option.is_none options.Debian.Debcudf.native) then
-      (Option.get options.Debian.Debcudf.native) :: options.Debian.Debcudf.foreign
+    if not(Option.is_none options.Dose_debian.Debcudf.native) then
+      (Option.get options.Dose_debian.Debcudf.native) :: options.Dose_debian.Debcudf.foreign
     else []
   in
-  let packagelist = Debian.Packages.input_raw ~archs args in
+  let packagelist = Dose_debian.Packages.input_raw ~archs args in
 
-  let result = outdated ~summary ~failure ~explain ~dump ~checklist ~options packagelist in
+  let result = outdated ~summary ~failure ~explain ~dump ~options packagelist in
   if (result.Diagnostic.missing = 0) && (result.Diagnostic.conflict = 0)
   then 0 (* no broken packages *)
   else 1 (* at least one broken package *)
 ;;
 
 StdUtils.if_application
-~alternatives:["dose-outdated";"dose3-outdated";"edos-outdated";"deb-outdated"] 
+~alternatives:["dose-outdated";"dose3-outdated";"edos-outdated";"deb-outdated"]
 __label main ;;
 
