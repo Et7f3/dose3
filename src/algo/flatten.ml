@@ -1,10 +1,10 @@
 (* Copyright (C) 2005-2011 Jerome Vouillon
- * GPL 2 
+ * GPL 2
  * code taken from http://coinst.irill.org/
  * *)
 
 open ExtLib
-open Common
+open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
@@ -35,7 +35,7 @@ module PTbl = struct
   let iteri f a = Array.iteri (fun i v -> f i v) a
   let map = Array.map
   let mapi f a = Array.mapi (fun i v -> f i v) a
-  let foldi f a acc = 
+  let foldi f a acc =
     snd (Array.fold_right (fun v (i,acc) -> (i+1,f i v acc)) a (0,acc))
   let fold = Array.fold_right
 end
@@ -81,7 +81,7 @@ module Formula  = struct
   let implies1 l1 y = List.exists (fun x -> Disj.implies x y) l1
   let implies l1 l2 =
     List.for_all (fun y -> implies1 l1 y) l2
-  
+
   let equiv l1 l2 =
     List.for_all (fun y -> List.exists (fun x -> Disj.equiv x y) l1) l2 &&
     List.for_all (fun y -> List.exists (fun x -> Disj.equiv x y) l2) l1
@@ -139,11 +139,13 @@ let simplify_formula confl f =
             Conflict.exists confl (fun q -> not (Disj.implies1 q d)) p) d)
     f
 
+    (*
 let filter_conflicts confl p f =
   Formula.map
     (fun d -> Disj.filter (fun q -> not (Conflict.check confl p q)) d) f
+*)
 
-let filter_conflicts confl p f =
+let filter_conflicts confl _ f =
   Formula.fold
     (fun d nf ->
        Formula.conj nf
@@ -198,10 +200,10 @@ let remove_self_conflicts deps confl =
   let s = ref PSet.empty in
   PTbl.iteri
     (fun p f ->
-       if Formula.exists (fun d -> 
-         match Disj.to_lit d with Some q -> 
+       if Formula.exists (fun d ->
+         match Disj.to_lit d with Some q ->
            Conflict.check confl p q | None -> false
-          ) f 
+          ) f
         then
          s := PSet.add p !s)
     deps;
@@ -265,7 +267,7 @@ let remove_redundant_conflicts deps confl =
   PTbl.map (simplify_formula confl) deps
 ;;
 
-let maybe_remove deps confl p f d =
+let maybe_remove deps confl _p _f d =
   Disj.exists (fun q ->
     Conflict.for_all confl (fun r ->
       Formula.exists (fun d' ->
@@ -279,7 +281,7 @@ let is_composition deps p f d =
   Formula.exists (fun d' ->
     not (Disj.equiv d d') && not (Disj.equiv (Disj.lit p) d') && (
       Formula.exists (fun d'' -> Disj.implies d d'') (
-        Disj.fold (fun p f -> 
+        Disj.fold (fun p f ->
           Formula.disj (PTbl.get deps p) f
         ) d' Formula._false
       )
@@ -320,14 +322,14 @@ let repository universe =
       Conflict.add confl i j
     ) (CudfAdd.who_conflicts c universe p1);
 
-    let dll = 
+    let dll =
       List.map (fun disjunction ->
         let dl =
           List.fold_left (fun l2 vpkg ->
             let l = CudfAdd.who_provides universe vpkg in
             List.fold_left (fun acc i -> (CudfAdd.pkgtoint universe i)::acc) l2 l
           ) [] disjunction
-        in 
+        in
         Formula.lit_disj (List.unique ~cmp dl)
       ) p1.Cudf.depends
     in

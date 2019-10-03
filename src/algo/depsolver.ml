@@ -11,7 +11,7 @@
 (**************************************************************************************)
 
 open ExtLib
-open Common
+open Dose_common
 open CudfAdd
 
 #define __label __FILE__
@@ -19,8 +19,8 @@ let label =  __label ;;
 include Util.Logging(struct let label = label end) ;;
 
 type solver = Depsolver_int.solver
-let timer_solver = Util.Timer.create "Algo.Depsolver.solver" 
-let timer_init = Util.Timer.create "Algo.Depsolver.init" 
+let timer_solver = Util.Timer.create "Algo.Depsolver.solver"
+let timer_init = Util.Timer.create "Algo.Depsolver.init"
 
 let load ?(global_constraints=[]) universe =
   let global_constraints =
@@ -31,7 +31,7 @@ let load ?(global_constraints=[]) universe =
   Depsolver_int.init_solver_univ ~global_constraints universe
 
 (** [univcheck ?callback universe] check all packages in the
-    universe for installability 
+    universe for installability
 
     @return the number of packages that cannot be installed
 *)
@@ -59,7 +59,7 @@ let univcheck ?(global_constraints=[]) ?callback ?(explain=true) universe =
     Util.Progress.reset Depsolver_int.progressbar_univcheck;
     Util.Timer.stop timer_solver !failed
   in
-  let map = new Common.Util.identity in
+  let map = new Dose_common.Util.identity in
   match callback with
   |None -> aux universe
   |Some f ->
@@ -67,7 +67,7 @@ let univcheck ?(global_constraints=[]) ?callback ?(explain=true) universe =
     aux ~callback:callback_int universe
 ;;
 
-(** [listcheck ?callback universe pkglist] check if a subset of packages 
+(** [listcheck ?callback universe pkglist] check if a subset of packages
     un the universe are installable.
 
     @param pkglist list of packages to be checked
@@ -92,18 +92,18 @@ let listcheck ?(global_constraints=[]) ?callback ?(explain=true) universe pkglis
     begin match (fst solver.Depsolver_int.globalid) with
     |(false,false) ->
         List.iter (fun id -> if not(check id) then incr failed) idlist
-    |_ -> 
+    |_ ->
         let gid = snd solver.Depsolver_int.globalid in
         List.iter (function
           |id when id = gid -> ()
           |id ->if not(check id) then incr failed
-        ) idlist 
+        ) idlist
     end;
     Util.Progress.reset Depsolver_int.progressbar_univcheck;
     Util.Timer.stop timer_solver !failed
   in
   let idlist = List.map (CudfAdd.pkgtoint universe) pkglist in
-  let map = new Common.Util.identity in
+  let map = new Dose_common.Util.identity in
   match callback with
   |None -> aux universe idlist
   |Some f ->
@@ -117,7 +117,7 @@ let univcheck_lowmem ?(global_constraints=[]) ?callback ?(explain=true) universe
   (* Split the universe in 10 subuniverses of size 1/10 *)
   let chunkssize = ((Cudf.universe_size universe) / 20) + 1 in
   (* The set of packages that must be present in each universe *)
-  let keepset = CudfAdd.to_set (CudfAdd.cone universe keeplist) in 
+  let keepset = CudfAdd.to_set (CudfAdd.cone universe keeplist) in
   debug "univcheck lowmem make paritions chunksize=%d" chunkssize;
   let partitions keepset l =
     let rec aux (univ,tested) = function
@@ -292,7 +292,7 @@ let find_broken ?(global_constraints=[])  universe =
 
 let callback_aux acc d =
   match d.Diagnostic.request with
-  |[p] when (Diagnostic.is_solution d) -> 
+  |[p] when (Diagnostic.is_solution d) ->
       acc := p::!acc
   |[p] ->
       warning "Package %s is not installable" (CudfAdd.string_of_package p)
@@ -356,8 +356,8 @@ let reverse_dependencies univ =
   let rev = Depsolver_int.reverse_dependencies univ in
   let h = Cudf_hashtbl.create (Array.length rev) in
   Array.iteri (fun i l ->
-    Cudf_hashtbl.add h 
-      (CudfAdd.inttopkg univ i) 
+    Cudf_hashtbl.add h
+      (CudfAdd.inttopkg univ i)
       (List.map (CudfAdd.inttopkg univ) l)
   ) rev ;
   h
@@ -396,7 +396,7 @@ let output_clauses ?(global_constraints=[]) ?(enc=Cnf) universe =
   let to_dimacs dump =
     let str (v, p) =
       if v != size then
-        if p then Printf.sprintf "%d" v else Printf.sprintf "-%d" v 
+        if p then Printf.sprintf "%d" v else Printf.sprintf "-%d" v
       else ""
     in
     let varnum = size in
@@ -424,20 +424,20 @@ let dummy_request =
   }
 
 (* add a version constraint to ensure name is upgraded *)
-let upgrade_constr universe name = 
+let upgrade_constr universe name =
   match Cudf.get_installed universe name with
   |[] -> name,None
   |[p] -> name,Some(`Geq,p.Cudf.version)
   |pl ->
-      let p = List.hd(List.sort ~cmp:Cudf.(>%) pl) 
+      let p = List.hd(List.sort ~cmp:Cudf.(>%) pl)
       in (name,Some(`Geq,p.Cudf.version))
 
 let add_dummy universe request dummy =
-  let deps = 
+  let deps =
     let il = request.Cudf.install in
     (* we preserve the user defined constraints, while adding the upgrade constraint *)
     let ulc =
-      List.filter (function (_,Some _) -> true | _ -> false) request.Cudf.upgrade 
+      List.filter (function (_,Some _) -> true | _ -> false) request.Cudf.upgrade
     in
     let ulnc =
       List.map (fun (name,_) ->
@@ -446,7 +446,7 @@ let add_dummy universe request dummy =
     in
     let l = il @ ulc @ ulnc in
     debug "request consistency (install %d) (upgrade %d) (remove %d) (# %d)"
-      (List.length request.Cudf.install) 
+      (List.length request.Cudf.install)
       (List.length request.Cudf.upgrade)
       (List.length request.Cudf.remove)
       (Cudf.universe_size universe);
@@ -471,7 +471,7 @@ let remove_dummy ?(explain=false) pre (dummy,d) =
     if explain then Unsat (Some d) else Unsat None
 
 let check_request_using
-  ?call_solver ?criteria ?dummy ?(explain=false) (pre,universe,request) =
+  ?call_solver ?dummy ?(explain=false) (pre,universe,request) =
   match call_solver,dummy with
   |None,None ->
       let (u,r) = add_dummy universe request dummy_request in
@@ -528,7 +528,7 @@ type depclean_result =
     (Cudf_types.vpkg * Cudf.package list) list
   )
 
-(** Depclean. Detect useless dependencies and/or conflicts 
+(** Depclean. Detect useless dependencies and/or conflicts
     to missing or broken packages *)
 let depclean ?(global_constraints=[]) ?(callback=(fun _ -> ())) universe pkglist =
   let global_constraints =
@@ -539,8 +539,8 @@ let depclean ?(global_constraints=[]) ?(callback=(fun _ -> ())) universe pkglist
   let cudfpool = Depsolver_int.init_pool_univ ~global_constraints universe in
   let is_broken =
     let cache = Hashtbl.create (Cudf.universe_size universe) in
-    fun pkg -> 
-      try Hashtbl.find cache pkg with 
+    fun pkg ->
+      try Hashtbl.find cache pkg with
       |Not_found ->
         let r = edos_install_cache universe cudfpool [pkg] in
         let res = not(Diagnostic.is_solution r) in
@@ -574,15 +574,15 @@ let depclean ?(global_constraints=[]) ?(callback=(fun _ -> ())) universe pkglist
   in
   (* if a package is in conflict with another package that is broken or missing,
      then the conflict can be removed *)
-  let test_conflict l = 
+  let test_conflict l =
     List.fold_left (fun acc -> function
       |(vpkg,[]) -> (vpkg,[])::acc
-      |(vpkg,l) -> acc 
-      (* if the conflict is with a broken package, 
+      |(_,_) -> acc
+      (* if the conflict is with a broken package,
          it is still a valid conflict *)
-    ) [] l 
+    ) [] l
   in
-  (* if a package p depends on a package that make p uninstallable, then it 
+  (* if a package p depends on a package that make p uninstallable, then it
      can be removed. If p depends on a missing package, the dependency can
      be equally removed *)
   let test_depends univ (`CudfPool (_,pool)) pkg l =
@@ -650,7 +650,7 @@ let installation_graph ~solution:soluniv (install,remove) =
       Defaultgraphs.ActionGraph.G.add_edge g (Defaultgraphs.ActionGraph.PkgV.Remove p1) (Defaultgraphs.ActionGraph.PkgV.Install p2)
     with Not_found -> ()
   ) remove;
-  
+
   (* uninstall order *)
   PG.G.iter_edges (fun p1 p2 ->
     Defaultgraphs.ActionGraph.G.add_edge g (Defaultgraphs.ActionGraph.PkgV.Remove p1) (Defaultgraphs.ActionGraph.PkgV.Remove p2)

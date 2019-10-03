@@ -12,7 +12,7 @@
 
 module OcamlHash = Hashtbl ;;
 open ExtLib ;;
-open Common ;;
+open Dose_common ;;
 
 #define __label __FILE__
 let _label =  __label ;;
@@ -31,14 +31,14 @@ type request_int = int list
 
 (** One un-installability reason for a package *)
 type reason =
-  |Dependency of (Cudf.package * Cudf_types.vpkg list * Cudf.package list) 
+  |Dependency of (Cudf.package * Cudf_types.vpkg list * Cudf.package list)
   (** Not strictly a un-installability, Dependency (a,vpkglist,pkglist) is used
       to recontruct the the dependency path from the root package to the
       offending un-installable package *)
-  |Missing of (Cudf.package * Cudf_types.vpkg list) 
+  |Missing of (Cudf.package * Cudf_types.vpkg list)
   (** Missing (a,vpkglist) means that the dependency
       [vpkglist] of package [a] cannot be satisfied *)
-  |Conflict of (Cudf.package * Cudf.package * Cudf_types.vpkg) 
+  |Conflict of (Cudf.package * Cudf.package * Cudf_types.vpkg)
   (** Conflict (a,b,vpkg) means that the package [a] is in conflict
       with package [b] because of vpkg *)
 
@@ -49,14 +49,14 @@ type request = Cudf.package list
 
 (** The result of an installability query *)
 type result =
-  |Success of (?all:bool -> unit -> Cudf.package list) 
+  |Success of (?all:bool -> unit -> Cudf.package list)
   (** If successfull returns a function that will
       return the installation set for the given query. Since
       not all packages are tested for installability directly, the
       installation set might be empty. In this case, the solver can
-      be called again to provide the real installation set 
+      be called again to provide the real installation set
       using the parameter [~all:true] *)
-  |Failure of (unit -> reason list) 
+  |Failure of (unit -> reason list)
   (** If unsuccessful returns a function containing the list of reason *)
 
 type diagnosis = { result : result ; request : request }
@@ -65,10 +65,10 @@ let reason map universe =
   let from_sat = CudfAdd.inttopkg universe in
   let globalid = map#vartoint (Cudf.universe_size universe) in
   List.filter_map (function
-    |DependencyInt(i,vl,il) when i = globalid -> None
-    |MissingInt(i,vl) when i = globalid ->
+    |DependencyInt(i,_vl,_il) when i = globalid -> None
+    |MissingInt(i,_vl) when i = globalid ->
         fatal "the package encoding global constraints can't be missing (uid %d)" i
-    |ConflictInt(i,j,vpkg) when i = globalid || j = globalid ->
+    |ConflictInt(i,j,_vpkg) when i = globalid || j = globalid ->
         fatal "the package encoding global constraints can't be in conflict (uid %d - %d)" i j
 
     |DependencyInt(i,vl,il) -> Some (
@@ -102,7 +102,7 @@ let request universe result =
 ;;
 
 (* XXX here the threatment of result and request is not uniform.
- * On one hand indexes in result must be processed with map#inttovar 
+ * On one hand indexes in result must be processed with map#inttovar
  * as they represent indexes associated with the solver.
  * On the other hand the indexes in result represent cudf uid and
  * therefore do not need to be processed.
@@ -153,14 +153,14 @@ let default_result n = {
 let pp_out_version fmt = Format.fprintf fmt "output-version: 1.2@.";;
 
 let pp_package ?(source=false) ?(fields=false) pp fmt pkg =
-  let (p,a,v,fieldlist) = pp pkg in
+  let (p,_,v,fieldlist) = pp pkg in
   Format.fprintf fmt "package: %s@," p;
   Format.fprintf fmt "version: %s" v;
   List.iter (function
     |(("source"|"sourcenumber"|"type"|"essential"),_) -> ()
     |(k,(v,true)) -> Format.fprintf fmt "@,%s: %s" k v
     |(k,(v,false)) when fields = true -> Format.fprintf fmt "@,%s: %s" k v
-    |(k,(v,_)) -> ()
+    |(_,(_,_)) -> ()
   ) fieldlist;
   try
     if fst(List.assoc "essential" fieldlist) = "true" then
@@ -173,8 +173,8 @@ let pp_package ?(source=false) ?(fields=false) pp fmt pkg =
   if source then
     try
       let source = fst(List.assoc "source" fieldlist) in
-      let sourceversion = 
-        try "(= "^(fst(List.assoc "sourcenumber" fieldlist))^")" 
+      let sourceversion =
+        try "(= "^(fst(List.assoc "sourcenumber" fieldlist))^")"
         with Not_found -> ""
       in begin
         Format.fprintf fmt "@,source: %s %s" source sourceversion;
@@ -216,7 +216,7 @@ let build_explanation_graph ?(addmissing=false) root l =
   in
   let gr = G.create () in
   (* we add the root, there might be a problem on related to packages
-     not related to the root, but failing to install because of a 
+     not related to the root, but failing to install because of a
      global constraint (like conflitting essential packages) *)
   G.add_vertex gr (add_node root);
   let c = ref 0 in
@@ -229,7 +229,7 @@ let build_explanation_graph ?(addmissing=false) root l =
     |e -> begin
       Hashtbl.add dup_reasons_table e ();
       match e with
-      (* a dependency is direct only if there is only 
+      (* a dependency is direct only if there is only
          one vpkg and only one package *)
       |Dependency(pkg,[vpkg],[p]) ->
           let vpid = add_node pkg in
@@ -281,8 +281,8 @@ let build_explanation_graph ?(addmissing=false) root l =
             incr c;
             (* if (G.V.compare vi vj) > 0 then *)
               add_edge gr vi (PkgE.Conflict vpkg) vj
-(* 
-            else 
+(*
+            else
               add_edge gr vj PkgE.Conflict vi
               *)
           end
@@ -305,7 +305,7 @@ let cmp_ne x y =
         else c
   in
   let cmp (n1,sl1,pl1) (n2,sl2,pl2) =
-    let c = Pervasives.compare n1 n2 in
+    let c = Stdlib.compare n1 n2 in
     if c = 0 then
       let c1 = cmplist sl1 sl2 in
       if c1 = 0 then cmplist pl1 pl2
@@ -319,7 +319,7 @@ let groupby cmp filter l =
     let k = filter v in
     let pl =
       try PMap.find k map
-      with Not_found -> [v] 
+      with Not_found -> [v]
     in
     PMap.add k (v :: pl) map
   ) (PMap.create cmp) l
@@ -330,7 +330,7 @@ let name_and_edges gr v =
   let pl = List.sort ~cmp:G.V.compare (G.pred gr v) in
   let n =
     match v with
-    |PkgV.Pkg { value = p } -> p.Cudf.package
+    |PkgV.Pkg { value = p ; _ } -> p.Cudf.package
     |PkgV.Or i -> Printf.sprintf "Or%d" i
     |PkgV.Missing _ -> "Missing"
     |PkgV.Set _ -> assert false
@@ -340,7 +340,7 @@ let name_and_edges gr v =
 let in_conflict gr x y =
   let open Defaultgraphs.SyntacticDependencyGraph in
   try
-    let e = 
+    let e =
       if G.V.compare x y > 0 then
         G.find_edge gr x y
       else
@@ -357,27 +357,27 @@ let condense_graph gr =
   let h = Hashtbl.create 17 in
   let getlist =
     List.filter_map (function
-      |PkgV.Pkg { value = p ; root = false } as v -> Some( p, v ) 
+      |PkgV.Pkg { value = p ; root = false } as v -> Some( p, v )
       |_ -> None
     )
   in
   Visit.postfix (function
     |((PkgV.Missing _)|(PkgV.Or _)) as v  ->
-      PMap.iter (fun (name,sl,pl) l ->
+      PMap.iter (fun (_name,sl,pl) l ->
         match getlist l with
         |[] -> ()
         |(_,hd)::[] -> Hashtbl.add h hd (List.hd l,sl,pl)
-        |pkgl -> 
+        |pkgl ->
           let vpid = G.V.create (PkgV.Set (CudfAdd.to_set (List.map fst pkgl))) in
           List.iter (fun (_,v) -> Hashtbl.add h v (vpid,sl,pl)) pkgl
       ) (groupby cmp_ne (name_and_edges gr) (G.pred gr v));
       (* a missing does not have any succ, so it's safe to assume the second
        * loop interests only Or nodes *)
-      PMap.iter (fun (name,sl,pl) l ->
+      PMap.iter (fun (_name,sl,pl) l ->
         match getlist l with
         |[] -> ()
         |(_,hd)::[] -> Hashtbl.add h hd (List.hd l,sl,pl)
-        |pkgl -> 
+        |pkgl ->
           if List.for_all (fun (_,src) ->
             (List.for_all (in_conflict gr src) sl) ||
             (List.for_all (in_conflict gr src) pl)
@@ -394,7 +394,7 @@ let condense_graph gr =
       let (vpid, sl, pl) = Hashtbl.find h v in
       List.iter (fun dst ->
         let e = G.find_edge gr v dst in
-        let dst = 
+        let dst =
           try let (c,_,_) = Hashtbl.find h dst in c
           with Not_found -> dst
         in
@@ -403,7 +403,7 @@ let condense_graph gr =
       ) sl;
       List.iter (fun src ->
         let e = G.find_edge gr src v in
-        let src = 
+        let src =
           try let (c,_,_) = Hashtbl.find h src in c
           with Not_found -> src
         in
@@ -417,10 +417,10 @@ let condense_graph gr =
   gr
 ;;
 
-let print_dot ?(pp=CudfAdd.default_pp) ?(condense=false) ?(addmissing=false) ?dir = 
+let print_dot ?(pp=CudfAdd.default_pp) ?(condense=false) ?(addmissing=false) ?dir =
   Defaultgraphs.SyntacticDependencyGraph.default_pp := pp;
   let open Defaultgraphs.SyntacticDependencyGraph in function
-  |{result = Success _ } -> fatal "Cannot build explanation graph on Success"
+  |{result = Success _ ; _ } -> fatal "Cannot build explanation graph on Success"
   |{result = Failure f; request = [r] } ->
       let fmt =
         let n = Printf.sprintf "%s.%s.dot"
@@ -445,15 +445,15 @@ let print_dot ?(pp=CudfAdd.default_pp) ?(condense=false) ?(addmissing=false) ?di
 
 let print_error ?(condense=false) ?(minimal=false) pp root fmt l =
   let module DG = Defaultgraphs.SyntacticDependencyGraph in
-  let get_package v = 
+  let get_package v =
     match v with
-    |DG.PkgV.Pkg { DG.value = p } -> [p]
+    |DG.PkgV.Pkg { DG.value = p ; _ } -> [p]
     |DG.PkgV.Set s -> CudfAdd.Cudf_set.elements s
     |_ -> raise Not_found
   in
   let pp_package_list ?(source=false) pp fmt pkgl =
-    if List.length pkgl = 1 then 
-      pp_package ~source pp fmt (List.hd pkgl) 
+    if List.length pkgl = 1 then
+      pp_package ~source pp fmt (List.hd pkgl)
     else begin
       let fl = List.map pp pkgl in
       let (n,_,_,_) = List.hd fl in
@@ -466,16 +466,16 @@ let print_error ?(condense=false) ?(minimal=false) pp root fmt l =
     if vpkgs <> [] then
       Format.fprintf fmt "@,%s: %a" label (CudfAdd.pp_vpkglist pp) vpkgs;
   in
-  let pp_dependencies pp fmt pl = 
+  let pp_dependencies pp fmt pl =
     let pp_dependency pp fmt ((src,label,_) : DG.G.E.t) =
       try
-        let l = 
+        let l =
           match src with
-          |DG.PkgV.Pkg { DG.value = p } -> [p]
+          |DG.PkgV.Pkg { DG.value = p ;_ } -> [p]
           |DG.PkgV.Set l -> (CudfAdd.Cudf_set.elements l)
           |_ -> raise Not_found
         in
-        let vpkgs = 
+        let vpkgs =
           match !label with
           |DG.PkgE.OrDepends vpkgs
           |DG.PkgE.DirDepends vpkgs
@@ -502,14 +502,13 @@ let print_error ?(condense=false) ?(minimal=false) pp root fmt l =
   let module DJ = Graph.Path.Dijkstra(Defaultgraphs.SyntacticDependencyGraph.G)(
     struct
       open Defaultgraphs.SyntacticDependencyGraph
-      type label = G.E.label
       type t = int
       type edge = G.E.t
       let weight e = match G.E.label e with { contents = PkgE.Conflict _ } -> 1000 | _ -> 0
-      let compare = Pervasives.compare
+      let compare = Stdlib.compare
       let add = (+)
       let zero = 0
-    end) 
+    end)
   in
   let gr =
     let g = build_explanation_graph ~addmissing:false root l  in
@@ -517,7 +516,7 @@ let print_error ?(condense=false) ?(minimal=false) pp root fmt l =
   in
   let vroot = DG.G.V.create (DG.PkgV.Pkg { value = root ; DG.root = true }) in
   let pp_reason_conflicts fmt (vi,vj,vpkg) =
-    let (i,j) = get_package vi, get_package vj in 
+    let (i,j) = get_package vi, get_package vj in
     Format.fprintf fmt "@[<v 1>conflict:@,";
     Format.fprintf fmt "@[<v 1>pkg1:@,%a@," (pp_package_list ~source:true pp) i;
     Format.fprintf fmt "unsat-conflict: %a@]@," (CudfAdd.pp_vpkglist pp) [vpkg];
@@ -536,7 +535,7 @@ let print_error ?(condense=false) ?(minimal=false) pp root fmt l =
   let pp_reason_missing fmt (vi,vpkgs) =
     let i = try get_package vi with Not_found -> assert false in
     Format.fprintf fmt "@[<v 1>missing:@,";
-    Format.fprintf fmt "@[<v 1>pkg:@,%a@]" 
+    Format.fprintf fmt "@[<v 1>pkg:@,%a@]"
       (pp_dependency_list ~label:"unsat-dependency" pp) (i,List.unique vpkgs);
     if not minimal then begin
       let pl = try fst(DJ.shortest_path gr vroot vi) with Not_found -> [] in
@@ -584,37 +583,37 @@ let minimize roots l =
       ) pkg.Cudf.depends
     end
   in
-  begin match roots with 
+  begin match roots with
   |[r] -> visit r
-  |rl -> List.iter visit l end;
+  |_rl -> List.iter visit l end;
   H.fold (fun k _ l -> k::l) acc []
 ;;
 
 let get_installationset ?(minimal=false) = function
-  |{result = Success f ; request = req} -> 
+  |{result = Success f ; request = req} ->
      let s = f ~all:true () in
      if minimal then minimize req s else s
-  |{result = Failure _ } -> raise Not_found
+  |{result = Failure _ ; _} -> raise Not_found
 ;;
 
 let is_solution = function
-  |{result = Success _ } -> true
-  |{result = Failure _ } -> false
+  |{result = Success _ ; _ } -> true
+  |{result = Failure _ ; _ } -> false
 ;;
 
-let fprintf ?(pp=CudfAdd.default_pp) ?(failure=false) ?(success=false) ?(explain=false) 
-  ?(minimal=false) ?(condense=false) fmt d = 
+let fprintf ?(pp=CudfAdd.default_pp) ?(failure=false) ?(success=false) ?(explain=false)
+  ?(minimal=false) ?(condense=false) fmt d =
   match d with
-  |{result = Success f; request = req } when success ->
+  |{result = Success _; request = req } when success ->
       Format.fprintf fmt "@[<v 1>-@,";
       begin match req with
       |[] -> Format.fprintf fmt "@[<v>consistent@]@,"
-      |[r] -> 
+      |[r] ->
           Format.fprintf fmt "@[<v>%a@]@," (pp_package ~source:true ~fields:true pp) r;
           if minimal then
             Format.fprintf fmt "success: %a@," CudfAdd.pp_package r
-      |rl -> 
-          Format.fprintf fmt "coinst: %s@," 
+      |rl ->
+          Format.fprintf fmt "coinst: %s@,"
           (String.concat " , " (List.map CudfAdd.string_of_package rl));
           if minimal then
             Format.fprintf fmt "success: %s@,"
@@ -642,7 +641,7 @@ let fprintf ?(pp=CudfAdd.default_pp) ?(failure=false) ?(success=false) ?(explain
        Format.fprintf fmt "@]"
       end;
       Format.fprintf fmt "@]@,"
-  |{result = Failure f; request = rl } when failure -> 
+  |{result = Failure f; request = rl } when failure ->
        Format.fprintf fmt "@[<v 1>-@,";
        Format.fprintf fmt "coinst: %s@," (String.concat " , " (List.map CudfAdd.string_of_package rl));
        if minimal then
@@ -652,7 +651,7 @@ let fprintf ?(pp=CudfAdd.default_pp) ?(failure=false) ?(success=false) ?(explain
        Format.fprintf fmt "@]@,";
        if explain then begin
          Format.fprintf fmt "@[<v 1>reasons:@,";
-         List.iter (fun r -> 
+         List.iter (fun r ->
            Format.fprintf fmt "@[<v>%a@]@," (print_error ~minimal ~condense pp r) (f ());
          ) rl;
         Format.fprintf fmt "@]@,"
@@ -663,13 +662,13 @@ let fprintf ?(pp=CudfAdd.default_pp) ?(failure=false) ?(success=false) ?(explain
 let printf ?(pp=CudfAdd.default_pp) ?(failure=false) ?(success=false) ?(explain=false) d =
   fprintf ~pp ~failure ~success ~explain Format.std_formatter d
 
-let collect results d = 
+let collect results d =
   let add h k v =
     try let l = ResultHash.find h k in l := v :: !l
     with Not_found -> ResultHash.add h k (ref [v])
   in
-  match d with 
-  |{result = Failure (f) ; request = [r] } -> 
+  match d with
+  |{result = Failure (f) ; request = [r] } ->
       let conflicts = ref 0 in
       let missing = ref 0 in
       List.iter (fun reason ->
@@ -679,7 +678,7 @@ let collect results d =
               add results.summary reason r;
             results.conflict <- results.conflict + 1;
             conflicts := !conflicts + 1
-        |Missing (i,vpkgs) ->
+        |Missing (i,_vpkgs) ->
             if not (Cudf.( r =% i )) then
               add results.summary reason r;
             results.missing <- results.missing + 1;
@@ -704,7 +703,7 @@ let pp_summary_row explain pp fmt = function
         Format.fprintf fmt "@]"
       end;
       Format.fprintf fmt "@]"
-  |(Missing (i,vpkgs) ,pl) -> 
+  |(Missing (i,vpkgs) ,pl) ->
       Format.fprintf fmt "@[<v 1>missing:@,";
       Format.fprintf fmt "@[<v 1>pkg:@,%a@]@,"
         (pp_dependency ~label:"unsat-dependency" pp) (i,vpkgs);
@@ -719,22 +718,22 @@ let pp_summary_row explain pp fmt = function
   |_ -> ()
 ;;
 
-let pp_summary ?(pp=CudfAdd.default_pp) ?(explain=false) () fmt result = 
+let pp_summary ?(pp=CudfAdd.default_pp) ?(explain=false) () fmt result =
   let l =
-    ResultHash.fold (fun k v acc -> 
+    ResultHash.fold (fun k v acc ->
       let l1 = Util.list_unique !v in
       begin match k with
         |Conflict(i,j,_) ->
-            let (pi,_,vi,_) = pp i in
-            let (pj,_,vj,_) = pp j in
+            let (pi,_,_,_) = pp i in
+            let (pj,_,_,_) = pp j in
             result.unique_conflict <- result.unique_conflict + 1;
             if pi = pj then
               result.unique_selfconflict <- result.unique_selfconflict + 1;
         |Missing(_,_) -> result.unique_missing <- result.unique_missing +1;
         |_ -> ()
       end;
-      if List.length l1 > 1 then (k,l1)::acc else acc 
-    ) result.summary [] 
+      if List.length l1 > 1 then (k,l1)::acc else acc
+    ) result.summary []
   in
   let l = List.sort ~cmp:(fun (_,l1) (_,l2) -> (List.length l2) - (List.length l1)) l in
 
@@ -746,7 +745,7 @@ let pp_summary ?(pp=CudfAdd.default_pp) ?(explain=false) () fmt result =
   Format.fprintf fmt "unique-self-conflicting-packages: %d@." result.unique_selfconflict;
   Format.fprintf fmt "@[<v 1>conflict-missing-ratio:@,";
   let mcl = Hashtbl.fold (fun k v acc -> (k,v)::acc) result.statistic [] in
-  pp_collection (fun fmt ((c,m),i) -> Format.fprintf fmt "%d-%d: %d" c m !i) fmt mcl; 
+  pp_collection (fun fmt ((c,m),i) -> Format.fprintf fmt "%d-%d: %d" c m !i) fmt mcl;
   Format.fprintf fmt "@]";
   Format.fprintf fmt "@]@.";
 

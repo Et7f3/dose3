@@ -15,7 +15,7 @@ module OCAMLHashtbl = Hashtbl
 
 open ExtLib
 open Graph
-open Common
+open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
@@ -28,8 +28,8 @@ let trbar = Util.Progress.create "Defaultgraph.GraphOper.transitive_reduction"
 module GraphOper (G : Sig.I) = struct
 
   (** transitive reduction.  Uses the transitive reduction algorithm from The
-      Transitive Reduction of a Directed Graph, Aho, Garey and Ullman, 1972 - 
-      with the proviso that we know that our graph already is a transitive 
+      Transitive Reduction of a Directed Graph, Aho, Garey and Ullman, 1972 -
+      with the proviso that we know that our graph already is a transitive
       closure *)
   (* this is a VERY expensive operation on Labelled graphs ... *)
   let transitive_reduction graph =
@@ -49,7 +49,7 @@ module GraphOper (G : Sig.I) = struct
     Util.Progress.reset trbar
   ;;
 
-  module O = Oper.I(G) 
+  module O = Oper.I(G)
   module S = Set.Make(G.V)
 
   (** extract the subgraph induced by the list l *)
@@ -70,37 +70,37 @@ module GraphOper (G : Sig.I) = struct
 
 end
 
-(** Syntactic dependency graph. Vertices are cudf packages, 
+(** Syntactic dependency graph. Vertices are cudf packages,
     OR nodes representing a disjunctive dependency, or Missing nodes
     representing a missing package. The latter is used to display explanation
     graphs. Vertices are indexed considering only the pair name,version .
     Edges are labelled with
     - [OrDepends] : disjuctive dependency
-    - [DirDepends] : direct dependecy 
+    - [DirDepends] : direct dependecy
     - [Conflict] : conflict
-    *) 
-module SyntacticDependencyGraph = struct 
+    *)
+module SyntacticDependencyGraph = struct
   type pkg = { value : Cudf.package; root : bool}
 
   module PkgV = struct
-    type t = 
+    type t =
       |Pkg of pkg
       |Set of CudfAdd.Cudf_set.t
       |Or of int
       |Missing of Cudf_types.vpkglist
     let compare x y = match (x,y) with
       |Or i1, Or i2 -> (i1 - i2)
-      |Pkg {value = p1}, Pkg {value = p2} -> CudfAdd.compare p1 p2
+      |Pkg {value = p1; _}, Pkg {value = p2; _} -> CudfAdd.compare p1 p2
       |Set s1, Set s2 -> CudfAdd.Cudf_set.compare s1 s2
-      |_, _ -> Pervasives.compare x y (* XXX *)
+      |_, _ -> Stdlib.compare x y (* XXX *)
     let hash = function
-      |Pkg {value} -> CudfAdd.hash value 
+      |Pkg {value; _} -> CudfAdd.hash value
       |Set s -> Hashtbl.hash s (* XXX Can fail ! *)
       |Or i -> Hashtbl.hash i
       |Missing i -> Hashtbl.hash i (* XXX *)
     let equal x y = match (x,y) with
       |Or i1, Or i2 -> (i1 = i2)
-      |Pkg {value = p1}, Pkg {value = p2} -> CudfAdd.equal p1 p2
+      |Pkg {value = p1; _}, Pkg {value = p2; _} -> CudfAdd.equal p1 p2
       |Set s1, Set s2 -> CudfAdd.Cudf_set.equal s1 s2
       |Missing i, Missing j -> (i = j) (* XXX *)
       |_ -> false
@@ -115,13 +115,13 @@ module SyntacticDependencyGraph = struct
       |Condensed
     type t = s ref
 
-    let compare x y = Pervasives.compare !x !y
+    let compare x y = Stdlib.compare !x !y
     let hash x = Hashtbl.hash !x
     let equal x y = ((compare x y) = 0)
     let default = ref (Conflict ("",None))
   end
 
-  let default_pp = ref CudfAdd.default_pp 
+  let default_pp = ref CudfAdd.default_pp
 
   module G = Imperative.Digraph.ConcreteLabeled(PkgV)(PkgE)
   module DotPrinter = struct
@@ -130,11 +130,11 @@ module SyntacticDependencyGraph = struct
       let vertex_name v = string_of_int (G.V.hash v)
 
       let graph_attributes = fun _ -> [`Rankdir `LeftToRight (* ; `Concentrate true *)]
-      let get_subgraph v = None
+      let get_subgraph _ = None
         (*
         let open Graphviz.DotAttributes in
         match G.V.label v with
-        |PkgV.Pkg {value = p} -> Some 
+        |PkgV.Pkg {value = p} -> Some
           { sg_name = string_of_int (Hashtbl.hash p.Cudf.package);
             sg_attributes = [`Style `Invis];
             sg_parent = None }
@@ -146,22 +146,22 @@ module SyntacticDependencyGraph = struct
 
       let vertex_attributes v =
         match G.V.label v with
-        |PkgV.Or i -> [`Label "Or"; `Shape `Diamond]
+        |PkgV.Or _ -> [`Label "Or"; `Shape `Diamond]
         |PkgV.Pkg {value; root} ->
             let al = ref [`Label (CudfAdd.string_of_package value)] in
             if value.Cudf.installed then al := (`Color 0x00FF00)::!al;
             if root then al := (`Shape `Record)::!al;
             !al
-        |PkgV.Set s when CudfAdd.Cudf_set.cardinal s > 0 -> 
+        |PkgV.Set s when CudfAdd.Cudf_set.cardinal s > 0 ->
             let l = CudfAdd.Cudf_set.elements s in
             let p = CudfAdd.Cudf_set.choose s in
-            let str = 
+            let str =
               Printf.sprintf "%s (=%s)"
               (CudfAdd.decode p.Cudf.package)
               (Util.string_of_list ~delim:("[","]") CudfAdd.string_of_version l)
             in
             [`Label str; `Shape `Record]
-        |PkgV.Set s -> [`Label "empty??"; `Shape `Record] 
+        |PkgV.Set _ -> [`Label "empty??"; `Shape `Record]
         |PkgV.Missing _ -> [ `Label "Missing"; `Color 0x00FF00; `Shape `Ellipse]
 
       let edge_attributes e =
@@ -169,7 +169,7 @@ module SyntacticDependencyGraph = struct
         |PkgE.DirDepends _ -> [`Style `Solid]
         |PkgE.OrDepends _ -> [`Style `Dashed]
         |PkgE.MissingDepends vpkgs ->
-            let style = 
+            let style =
               match G.E.src e with
               |PkgV.Or _ -> `Style `Dashed
               |_ -> `Style `Solid
@@ -180,16 +180,16 @@ module SyntacticDependencyGraph = struct
     end
 
     include Graph.Graphviz.Dot(Display)
-    let print fmt g = 
+    let print fmt g =
       fprint_graph fmt g;
       Format.fprintf fmt "@."
-  end 
+  end
   module S = Set.Make(PkgV)
 
   module GmlPrinter = Gml.Print (G) (
     struct
-      let node (v: G.V.label) = []
-      let edge (e: G.E.label) = []
+      let node (_: G.V.label) = []
+      let edge (_: G.E.label) = []
     end)
 
   module GraphmlPrinter = Graphml.Print (G) (
@@ -205,18 +205,18 @@ module SyntacticDependencyGraph = struct
            "realpackage","string",None;
            "realversion","string",None;
           ]
-     
+
       let edge_properties = [
         "vpkglist","string",None;
         "binaries","string",None;
         ]
 
-      let map_edge e = []
+      let map_edge _ = []
       let map_vertex = function
-        |PkgV.Pkg {value} ->
+        |PkgV.Pkg {value; _} ->
           let name = ("realpackage",CudfAdd.decode value.Cudf.package) in
           let version = ("realversion",CudfAdd.string_of_version value) in
-     
+
           let props =
             List.filter_map (fun (key,_,_) ->
               try Some(key,Cudf.lookup_package_property value key)
@@ -271,7 +271,7 @@ module SyntacticDependencyGraph = struct
       let vpid = add_node pkg in
       G.add_vertex gr vpid;
       List.iter (fun vpkgs ->
-        match CudfAdd.resolve_deps univ vpkgs with 
+        match CudfAdd.resolve_deps univ vpkgs with
         |[] ->
             let vp = G.V.create (PkgV.Missing vpkgs) in
             add_edge gr vpid (PkgE.MissingDepends vpkgs) vp
@@ -309,16 +309,16 @@ end
 
 (******************************************************)
 
-module ActionGraph = struct 
+module ActionGraph = struct
 
   module PkgV = struct
-    type t = 
+    type t =
       |Install of Cudf.package
       |Remove of Cudf.package
     let compare x y = match x,y with
       |Install p1, Install p2 -> CudfAdd.compare p1 p2
       |Remove p1, Remove p2 -> CudfAdd.compare p1 p2
-      |x,y -> Pervasives.compare x y
+      |x,y -> Stdlib.compare x y
 
     let hash = function
       |Install p -> Hashtbl.hash (1,p.Cudf.package,p.Cudf.version)
@@ -359,7 +359,7 @@ module ActionGraph = struct
         let satisfied = G.fold_succ (fun succ acc ->
           if acc then Hashtbl.mem processed succ else acc
         ) g v true in
-        (* if yes, remove this vertex from tocheck, add it to the result and 
+        (* if yes, remove this vertex from tocheck, add it to the result and
          * add its predecessors to tocheck*)
         if satisfied then begin
           Hashtbl.remove tocheck v;
@@ -396,25 +396,25 @@ module ActionGraph = struct
         |PkgV.Install _ -> [ `Color 0x00FF00 ]
         |PkgV.Remove _ -> [ `Color 0xFF0000 ]
 
-      let edge_attributes e = []
+      let edge_attributes _ = []
     end
     include Graph.Graphviz.Dot(Display)
     let print fmt g = fprint_graph fmt g
-  end 
+  end
 
   module GmlPrinter = Gml.Print (G) (
     struct
-       let node (v: G.V.label) = []
-       let edge (e: G.E.label) = []
+       let node (_: G.V.label) = []
+       let edge (_: G.E.label) = []
      end
   )
 
 end
 
-(** Imperative bidirectional graph for dependecies. *)
-(** Imperative unidirectional graph for conflicts. *)
+(** Imperative bidirectional graph for dependecies.
+    Imperative unidirectional graph for conflicts. *)
 (* Note: ConcreteBidirectionalLabelled graphs are slower and we do not use them
- * here *)
+   here *)
 module PackageGraph = struct
 
   module PkgV = struct
@@ -443,16 +443,16 @@ module PackageGraph = struct
       let vertex_attributes p =
         if p.Cudf.installed then [ `Color 0x00FF00 ] else []
 
-      let edge_attributes e = []
+      let edge_attributes _ = []
     end
     include Graph.Graphviz.Dot(Display)
     let print fmt g = fprint_graph fmt g
-  end 
+  end
 
   module GmlPrinter = Gml.Print (G) (
     struct
-       let node (v: G.V.label) = []
-       let edge (e: G.E.label) = []
+       let node (_: G.V.label) = []
+       let edge (_: G.E.label) = []
      end
   )
 
@@ -469,17 +469,17 @@ module PackageGraph = struct
          "realpackage","string",None;
          "realversion","string",None;
         ]
-     
+
       let edge_properties = [
         "vpkglist","string",None;
         "binaries","string",None;
         ]
 
-      let map_edge e = []
+      let map_edge _ = []
       let map_vertex pkg =
         let name = ("realpackage",CudfAdd.decode pkg.Cudf.package) in
         let version = ("realversion",CudfAdd.string_of_version pkg) in
-   
+
         let props =
           List.filter_map (fun (key,_,_) ->
             try let value = Cudf.lookup_package_property pkg key in
@@ -497,14 +497,14 @@ module PackageGraph = struct
   (* J.A. La Poutre and J. van Leeuwen *)
   let add_edge ?transitive graph i j =
     let rec adapt g k red =
-      let new_red = 
+      let new_red =
         S.fold (fun l acc ->
           if not(G.V.equal k l) then G.add_edge g k l;
           G.fold_succ (fun m acc' ->
             if not (G.mem_edge g k m) then S.add m acc'
             else acc'
           ) g l acc
-        ) red S.empty 
+        ) red S.empty
       in
       if S.is_empty new_red then ()
       else adapt g k new_red
@@ -518,9 +518,9 @@ module PackageGraph = struct
     in
     match transitive with
     |None -> G.add_edge graph i j
-    |Some true -> 
+    |Some true ->
       (* add an edge and maintain the transitive clousure of the graph *)
-      insert graph i j 
+      insert graph i j
     |Some false ->
       (* TODO : add an edge and maintain the transitive reduction of the graph *)
       G.add_edge graph i j
@@ -633,7 +633,7 @@ module PackageGraph = struct
     let reduce_cycle path v =
       (* Somewhere, v should be in path. This is the cycle. *)
       let (other, c) = get_cycle [] path v in
-      let nv = 
+      let nv =
         let name = String.concat "/" (List.sort ~cmp:compare (List.map (fun p -> p.Cudf.package) (v::c))) in
         { Cudf.default_package with
           Cudf.package = CudfAdd.encode name;
@@ -671,7 +671,7 @@ module PackageGraph = struct
   let out ?(dump=None) ?(dot=None) ?(detrans=false) pkggraph =
     info "Dumping Graph : nodes %d , edges %d"
     (G.nb_vertex pkggraph) (G.nb_edges pkggraph) ;
-    
+
     if detrans then begin
       O.transitive_reduction pkggraph;
       debug "After transitive reduction : nodes %d , edges %d"
@@ -692,9 +692,9 @@ module PackageGraph = struct
       let oc = open_out f in
       DotPrinter.output_graph oc pkggraph;
       close_out oc
-    end 
+    end
 
-  let load pkglist filename =
+  let load _pkglist filename =
     let timer = Util.Timer.create "Defaultgraph.PackageGraph.load" in
     Util.Timer.start timer;
     let ic = open_in filename in
@@ -703,9 +703,9 @@ module PackageGraph = struct
     info "Loading Dependencies graph";
     (* we assume the graph is detransitivitized *)
     let sg =
-      if detrans then begin 
+      if detrans then begin
         info "Computing transitive closure";
-        (* O.add_transitive_closure graph *) 
+        (* O.add_transitive_closure graph *)
         graph
       end else graph
     in
@@ -720,7 +720,7 @@ module IntPkgGraph = struct
 
   module PkgV = struct
     type t = int
-    let compare = Pervasives.compare
+    let compare = Stdlib.compare
     let hash i = i
     let equal = (=)
   end
@@ -740,13 +740,13 @@ module IntPkgGraph = struct
       let default_edge_attributes = fun _ -> []
       let default_vertex_attributes = fun _ -> []
 
-      let vertex_attributes v = []
+      let vertex_attributes _ = []
 
-      let edge_attributes e = []
+      let edge_attributes _ = []
     end
     include Graph.Graphviz.Dot(Display)
     let print fmt g = fprint_graph fmt g
-  end 
+  end
 
   module DIn = Dot.Parse (Builder.I(G))(
     struct
@@ -760,8 +760,8 @@ module IntPkgGraph = struct
 
   module GmlPrinter = Gml.Print (G) (
     struct
-       let node (v: G.V.label) = []
-       let edge (e: G.E.label) = []
+       let node (_: G.V.label) = []
+       let edge (_: G.E.label) = []
     end
   )
 
@@ -846,7 +846,7 @@ module IntPkgGraph = struct
     graph
   ;;
 
-  let load pkglist filename =
+  let load _pkglist filename =
     let timer = Util.Timer.create "Defaultgraph.StrongDepGraph.load" in
     Util.Timer.start timer;
     let ic = open_in filename in
@@ -855,9 +855,9 @@ module IntPkgGraph = struct
     info "Loading Strong Dependencies graph";
     (* we assume the graph is detransitivitized *)
     let sg =
-      if detrans then begin 
+      if detrans then begin
         info "Computing transitive closure";
-        (* O.add_transitive_closure graph *) 
+        (* O.add_transitive_closure graph *)
         graph
       end else graph
     in

@@ -11,7 +11,7 @@
 (**************************************************************************************)
 
 open ExtLib
-open Common
+open Dose_common
 
 let progressbar_init = Util.Progress.create "Depsolver_int.init_solver"
 let progressbar_univcheck = Util.Progress.create "Depsolver_int.univcheck"
@@ -31,9 +31,9 @@ type solver = {
 
 type global_constraints = (Cudf_types.vpkglist * int list) list
 
-type dep_t = 
-  ((Cudf_types.vpkg list * S.var list) list * 
-   (Cudf_types.vpkg * S.var list) list ) 
+type dep_t =
+  ((Cudf_types.vpkg list * S.var list) list *
+   (Cudf_types.vpkg * S.var list) list )
 and pool = dep_t array
 and t = [`SolverPool of pool | `CudfPool of (bool * pool)]
 
@@ -47,7 +47,7 @@ let init_pool_univ ~global_constraints univ =
   (* the last element of the array *)
   let size = Cudf.universe_size univ in
   let keep = Hashtbl.create 200 in
-  let pool = 
+  let pool =
     (* here I initalize the pool to size + 1, that is I reserve one spot
      * to encode the global constraints associated with the universe.
      * However, since they are global, I've to add the at the end, after
@@ -57,12 +57,12 @@ let init_pool_univ ~global_constraints univ =
         if uid = size then ([],[])  (* the last index *)
         else begin
           let pkg = Cudf.package_by_uid univ uid in
-          let dll = 
+          let dll =
             List.map (fun vpkgs ->
               (vpkgs, CudfAdd.resolve_vpkgs_int univ vpkgs)
-            ) pkg.Cudf.depends 
+            ) pkg.Cudf.depends
           in
-          let cl = 
+          let cl =
             List.filter_map (fun vpkg ->
               match CudfAdd.resolve_vpkg_int univ vpkg with
               |[] -> None
@@ -77,7 +77,7 @@ let init_pool_univ ~global_constraints univ =
                 CudfAdd.add_to_package_list keep (pkg.Cudf.package,None) id
               ) (CudfAdd.resolve_vpkg_int univ (pkg.Cudf.package,None));
             |`Keep_version ->
-              CudfAdd.add_to_package_list keep 
+              CudfAdd.add_to_package_list keep
                 (pkg.Cudf.package,Some (`Eq, pkg.Cudf.version)) uid;
             |`Keep_feature ->
               List.iter (function
@@ -105,23 +105,23 @@ let init_pool_univ ~global_constraints univ =
   pool.(size) <- (keep_dll,[]);
   (`CudfPool (keep_dll <> [],pool))
 
-(** this function creates an array indexed by solver ids that can be 
+(** this function creates an array indexed by solver ids that can be
     used to init the edos solver *)
-let init_solver_pool map (`CudfPool (keep_constraints,cudfpool)) closure =
+let init_solver_pool map (`CudfPool (_keep_constraints,cudfpool)) closure =
   let convert (dll,cl) =
-    let sdll = 
+    let sdll =
       List.map (fun (vpkgs,uidl) ->
         (vpkgs,List.map map#vartoint uidl)
       ) dll
     in
-    let scl = 
+    let scl =
     (* ignore conflicts that are not in the closure.
      * if nobody depends on a conflict package, then it is irrelevant.
      * This requires a leap of faith in the user ability to build an
      * appropriate closure. If the closure is wrong, you are on your own *)
       List.map (fun (vpkg,uidl) ->
         let l =
-          List.filter_map (fun uid -> 
+          List.filter_map (fun uid ->
             try Some(map#vartoint uid)
             with Not_found -> begin
               debug "Dropping Conflict %s" (Cudf_types_pp.string_of_vpkg vpkg) ;
@@ -134,7 +134,7 @@ let init_solver_pool map (`CudfPool (keep_constraints,cudfpool)) closure =
     in (sdll,scl)
   in
 
-  let solverpool = 
+  let solverpool =
     Array.init (List.length closure) (fun sid ->
       convert (cudfpool.(map#inttovar sid))
     )
@@ -150,8 +150,8 @@ let init_solver_cache ?(buffer=false) ?(explain=true) (`SolverPool varpool) =
   let varsize = Array.length varpool in
 
   let add_depend constraints vpkgs pkg_id l =
-    let lit = S.lit_of_var pkg_id false in 
-    if (List.length l) = 0 then 
+    let lit = S.lit_of_var pkg_id false in
+    if (List.length l) = 0 then
       S.add_rule constraints [|lit|] (if_explain [Diagnostic.MissingInt(pkg_id,vpkgs)])
     else begin
       let lits = List.map (fun id -> S.lit_of_var id true) l in
@@ -183,7 +183,7 @@ let init_solver_cache ?(buffer=false) ?(explain=true) (`SolverPool varpool) =
       incr num_dependencies;
       add_depend constraints vpkgs pkg_id dl
     ) dll
-  in 
+  in
 
   let exec_conflicts constraints pkg_id cl =
     List.iter (fun (vpkg,l) ->
@@ -212,7 +212,7 @@ let init_solver_cache ?(buffer=false) ?(explain=true) (`SolverPool varpool) =
   constraints
 
 (** low level call to the sat solver
-  
+
     @param tested: optional int array used to cache older results
 *)
 let solve ?tested ~explain solver request =
@@ -225,12 +225,12 @@ let solve ?tested ~explain solver request =
         let l = S.assignment_true solver.constraints in
         if not(Option.is_none tested) then
           List.iter (fun i -> (Option.get tested).(i) <- true) l;
-        Diagnostic.SuccessInt(fun ?(all=false) () -> l)
+        Diagnostic.SuccessInt(fun [@ocaml.warning "-27"] ?(all=false) () -> l)
       ) else (
         if not(Option.is_none tested) then (
           let l = S.assignment_true solver.constraints in
           List.iter (fun i -> (Option.get tested).(i) <- true) l);
-        Diagnostic.SuccessInt(fun ?(all=false) () -> [])
+        Diagnostic.SuccessInt(fun [@ocaml.warning "-27"] ?(all=false) () -> [])
       )
     end else
       if explain then
@@ -239,7 +239,7 @@ let solve ?tested ~explain solver request =
         Diagnostic.FailureInt(fun () -> [])
   in
   match request,solver.globalid with
-  |[],((false,false),_) -> Diagnostic.SuccessInt(fun ?(all=false) () -> [])
+  |[],((false,false),_) -> Diagnostic.SuccessInt(fun [@ocaml.warning "-27"] ?(all=false) () -> [])
   |[],(((_,true)|(true,_)),gid) -> result S.solve S.collect_reasons (solver.map#vartoint gid)
   |[i],((false,false),_) -> result S.solve S.collect_reasons (solver.map#vartoint i)
   |l,((false,false),_) ->
@@ -271,7 +271,7 @@ let pkgcheck callback explain solver tested id =
           end else []
         in Diagnostic.SuccessInt(f)
       (* avoid to allocate anything on the stack if not stricly needed *)
-      else Diagnostic.SuccessInt(fun ?(all=false) () -> [])
+      else Diagnostic.SuccessInt(fun [@ocaml.warning "-27"] ?(all=false) () -> [])
     end
   in
   match callback, res with
@@ -281,7 +281,7 @@ let pkgcheck callback explain solver tested id =
   |Some f, Diagnostic.FailureInt _ -> ( f (res,[id]) ; false )
 
 (** low level constraint solver initialization
- 
+
     @param buffer debug buffer to print out debug messages
     @param univ cudf package universe
 *)
@@ -298,13 +298,13 @@ let init_solver_univ ~global_constraints ?(buffer=false) ?(explain=true) univ =
     globalid = ((keep_constraints,global_constraints),gid) }
 
 (** low level constraint solver initialization
- 
+
     @param buffer debug buffer to print out debug messages
     @param pool dependencies and conflicts array idexed by package id
     @param closure subset of packages used to initialize the solver
 *)
 (* pool = cudf pool - closure = dependency clousure . cudf uid list *)
-let init_solver_closure ~global_constraints ?(buffer=false) 
+let init_solver_closure ~global_constraints ?(buffer=false)
   (`CudfPool (keep_constraints,cudfpool)) closure =
   let gid = Array.length cudfpool - 1 in
   let global_constraints = global_constraints <> [] in
@@ -344,7 +344,7 @@ let reverse_dependencies univ =
   ) univ;
   reverse
 
-let dependency_closure_cache ?(maxdepth=max_int) 
+let dependency_closure_cache ?(maxdepth=max_int)
   ?(conjunctive=false) (`CudfPool (_,cudfpool)) idlist =
   let queue = Queue.create () in
   let globalid = (Array.length cudfpool - 1) in
@@ -373,7 +373,7 @@ let dependency_closure_cache ?(maxdepth=max_int)
 (*    XXX : elements in idlist should be included only if because
  *    of circular dependencies *)
 (** return the dependency closure of the reverse dependency graph.
-    The visit is bfs.    
+    The visit is bfs.
 
     @param maxdepth the maximum cone depth (infinite by default)
     @param index the package universe

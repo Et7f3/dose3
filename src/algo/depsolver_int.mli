@@ -13,7 +13,7 @@
 (** Dependency solver. Low Level API *)
 
 (** Implementation of the EDOS algorithms (and more).
-    This module respects the cudf semantic. 
+    This module respects the cudf semantic.
 
     This module contains two type of functions.
     Normal functions work on a cudf universe. These are just a wrapper to
@@ -28,16 +28,16 @@
 
 (** Sat Solver instance *)
 module R : sig type reason = Diagnostic.reason_int end
-module S : Common.EdosSolver.T with module X = R
+module S : Dose_common.EdosSolver.T with module X = R
 
 (** internal state of the sat solver. The map allows to transform
-    sat solver variables (that must be contiguous) to integers 
+    sat solver variables (that must be contiguous) to integers
     representing the id of a package *)
 type solver = {
   constraints : S.state;         (** the sat problem *)
-  map : Common.Util.projection;  (** a map from cudf package ids to solver ids *)
+  map : Dose_common.Util.projection;  (** a map from cudf package ids to solver ids *)
   globalid : (bool * bool) * int (** (keep_constrains,global_constrains),gui) where
-                                     gid is the last index of the cudfpool. Used to encode 
+                                     gid is the last index of the cudfpool. Used to encode
                                      a 'dummy' package and to enforce global constraints.
                                      keep_constrains and global_constrains are true if either
                                      keep_constrains or global_constrains are enforceble.
@@ -53,29 +53,31 @@ type global_constraints = (Cudf_types.vpkglist * int list) list
 type dep_t =
     (Cudf_types.vpkg list * int list) list *
     (Cudf_types.vpkg * int list) list
+
 and pool = dep_t array
+
 (** A pool can either be a low level representation of the universe
     where all integers are interpreted as solver variables or a universe
     where all integers are interpreted as cudf package indentifiers. The
-    boolean associate to the cudfpool is true if keep_constrains are 
+    boolean associate to the cudfpool is true if keep_constrains are
     present in the universe. The last index of the pool is the globalid *)
 and t = [`SolverPool of pool | `CudfPool of (bool * pool)]
 
 type result =
-  | Success of (unit -> int list) (** return a function providing the list of the 
+  | Success of (unit -> int list) (** return a function providing the list of the
                                       cudf packages belonging to the installation set *)
   | Failure of (unit -> Diagnostic.reason_int list) (** return a function with the
                                                         failure explanations *)
 
-(** Given a cudf universe , this function returns a [CudfPool]. 
+(** Given a cudf universe , this function returns a [CudfPool].
     We assume that cudf uid are sequential and we can use them as an array index.
     The last index of the pool is the globalid.
  *)
 val init_pool_univ : global_constraints : global_constraints -> Cudf.universe -> [> `CudfPool of (bool * pool)]
 
-(** this function creates an array indexed by solver ids that can be 
+(** this function creates an array indexed by solver ids that can be
     used to init the edos solver. Return a [SolverPool] *)
-val init_solver_pool : Common.Util.projection -> 
+val init_solver_pool : Dose_common.Util.projection ->
   [< `CudfPool of (bool * pool)] -> 'a list -> [> `SolverPool of pool]
 
 (** Initalise the sat solver. Operates only on solver ids [SolverPool] *)
@@ -83,9 +85,9 @@ val init_solver_cache : ?buffer:bool -> ?explain:bool ->
   [< `SolverPool of pool] -> S.state
 
 (** Call the sat solver
-  
+
     @param tested: optional int array used to cache older results
-    @param explain: if try we add all the information needed to create the 
+    @param explain: if try we add all the information needed to create the
                     explanation graph
 *)
 val solve :
@@ -95,23 +97,23 @@ val solve :
 		Diagnostic.result_int
 
 (** [pkgcheck callback solver tested id].
-   This function is used to "distcheck" a list of packages 
+   This function is used to "distcheck" a list of packages
    *)
 val pkgcheck :
-	(Diagnostic.result_int * Diagnostic.request_int -> 'a) option -> 
-	bool -> solver -> bool array -> int -> 
+	(Diagnostic.result_int * Diagnostic.request_int -> unit) option ->
+	bool -> solver -> bool array -> int ->
 		bool
 
 (** Constraint solver initialization
- 
+
     @param buffer debug buffer to print out debug messages
     @param univ cudf package universe
 *)
-val init_solver_univ : global_constraints : global_constraints -> ?buffer: bool -> 
+val init_solver_univ : global_constraints : global_constraints -> ?buffer: bool ->
     ?explain: bool -> Cudf.universe -> solver
 
 (** Constraint solver initialization
- 
+
     @param buffer debug buffer to print out debug messages
     @param pool dependencies and conflicts array idexed by package id
     @param closure subset of packages used to initialize the solver
@@ -141,7 +143,7 @@ val dependency_closure_cache : ?maxdepth:int -> ?conjunctive:bool ->
   [< `CudfPool of (bool * pool)] -> int list -> int list
 
 (** return the dependency closure of the reverse dependency graph.
-    The visit is bfs.    
+    The visit is bfs.
 
     @param maxdepth the maximum cone depth (infinite by default)
     @param index the package universe
@@ -153,5 +155,5 @@ val reverse_dependency_closure :
   ?maxdepth:int -> int list array -> int list -> int list
 
 (** {2 Progress Bars} *)
-val progressbar_init : Common.Util.Progress.t
-val progressbar_univcheck : Common.Util.Progress.t
+val progressbar_init : Dose_common.Util.Progress.t
+val progressbar_univcheck : Dose_common.Util.Progress.t

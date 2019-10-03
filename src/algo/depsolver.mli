@@ -24,8 +24,8 @@ val load :
     This function is a wrapper of Cudf_checker.is_consistent. *)
 val is_consistent : Cudf.universe -> Diagnostic.diagnosis
 
-(** check if the given package can be installed in the universe 
- 
+(** check if the given package can be installed in the universe
+
     Packages marked as `Keep_package must be always installed.*)
 val edos_install :
   ?global_constraints:(Cudf_types.vpkglist * Cudf.package list) list ->
@@ -53,22 +53,22 @@ val trimlist :
     Cudf.universe -> Cudf.package list -> Cudf.package list
 
 (** return the list of broken packages.*)
-val find_broken : 
+val find_broken :
   ?global_constraints:(Cudf_types.vpkglist * Cudf.package list) list ->
     Cudf.universe -> Cudf.package list
 
 (** return the list of installable packages. *)
-val find_installable : 
+val find_installable :
   ?global_constraints:(Cudf_types.vpkglist * Cudf.package list) list ->
     Cudf.universe -> Cudf.package list
 
 (** return the list of broken packages.*)
-val find_listbroken : 
+val find_listbroken :
   ?global_constraints:(Cudf_types.vpkglist * Cudf.package list) list ->
     Cudf.universe -> Cudf.package list -> Cudf.package list
 
 (** return the list of installable packages. *)
-val find_listinstallable : 
+val find_listinstallable :
   ?global_constraints:(Cudf_types.vpkglist * Cudf.package list) list ->
     Cudf.universe -> Cudf.package list -> Cudf.package list
 
@@ -77,7 +77,7 @@ val find_listinstallable :
     is installable, the installation might be empty. To obtain an installation
     set for each installable packages, the correct procedure is to iter on the
     list of packages.
- 
+
     @param callback : execute a function for each package. This function can
     have side effects and can be used to collect the installation set or the
     failure reason.
@@ -86,16 +86,16 @@ val find_listinstallable :
  *)
 val univcheck :
   ?global_constraints:(Cudf_types.vpkglist * Cudf.package list) list ->
-    ?callback:(Diagnostic.diagnosis -> unit) -> 
+    ?callback:(Diagnostic.diagnosis -> unit) ->
       ?explain:bool -> Cudf.universe -> int
 
-val univcheck_lowmem :  
+val univcheck_lowmem :
   ?global_constraints:(Cudf_types.vpkglist * Cudf.package list) list ->
     ?callback:(Diagnostic.diagnosis -> unit) -> ?explain:bool -> Cudf.universe -> int
 
 (** [listcheck ~callback:c subuniverse l] check if all packages in [l] can be
    installed.
-  
+
    Invariant : l is a subset of universe can be installed in the solver universe.
 
    It is responsability of the user to pass listcheck an appropriate subuniverse`
@@ -106,7 +106,7 @@ val univcheck_lowmem :
 val listcheck :
   ?global_constraints:(Cudf_types.vpkglist * Cudf.package list) list ->
     ?callback:(Diagnostic.diagnosis -> unit) ->
-      ?explain:bool -> Cudf.universe -> Cudf.package list -> int 
+      ?explain:bool -> Cudf.universe -> Cudf.package list -> int
 
 (** [dependency_closure index l] return the union of the dependency closure of
     all packages in [l] .
@@ -116,15 +116,15 @@ val listcheck :
     @param universe the package universe
     @param pkglist a subset of [universe]
 *)
-val dependency_closure : 
+val dependency_closure :
   ?global_constraints:(Cudf_types.vpkglist * Cudf.package list) list ->
     ?maxdepth:int -> ?conjunctive:bool ->
       Cudf.universe -> Cudf.package list -> Cudf.package list
 
 (** [reverse_dependencies univ ] compute the reverse dependency list of all
     packages in the universe [univ] *)
-val reverse_dependencies : 
-  Cudf.universe -> (Cudf.package list) Common.CudfAdd.Cudf_hashtbl.t
+val reverse_dependencies :
+  Cudf.universe -> (Cudf.package list) Dose_common.CudfAdd.Cudf_hashtbl.t
 
 (** [reverse_dependencies_closure univ ] compute the reverse dependency list of all
     packages in [l] in the universe [univ] *)
@@ -134,7 +134,7 @@ val reverse_dependency_closure : ?maxdepth:int ->
 type enc = Cnf | Dimacs
 
 (** [output_clauses enc univ] return a string encoded accordingly to [enc]
-    (default cnf). 
+    (default cnf).
   *)
 val output_clauses :
   ?global_constraints:(Cudf_types.vpkglist * Cudf.package list) list ->
@@ -142,18 +142,18 @@ val output_clauses :
 
 (** The result of the depclean function is a tuple containing a package, a list
     of dependencies that are redundant and a list of conflicts that are redundant *)
-type depclean_result = 
-  (Cudf.package * 
+type depclean_result =
+  (Cudf.package *
     (Cudf_types.vpkglist * Cudf_types.vpkg * Cudf.package list) list *
-    (Cudf_types.vpkg * Cudf.package list) list 
+    (Cudf_types.vpkg * Cudf.package list) list
   )
 
-(** For each package [p] in [packagelist], [depclean univ packagelist] detect 
+(** For each package [p] in [packagelist], [depclean univ packagelist] detect
     redundundant dependencies that refer to packages that are either missing
     or not co-installable together with the root package [p] *)
 val depclean :
   ?global_constraints:(Cudf_types.vpkglist * Cudf.package list) list ->
-  ?callback : (depclean_result -> unit) -> 
+  ?callback : (depclean_result -> unit) ->
   Cudf.universe ->
   Cudf.package list ->
     depclean_result list
@@ -167,13 +167,14 @@ type solver_result =
 val dummy_request : Cudf.package
 
 val add_dummy: Cudf.universe -> Cudf.request -> Cudf.package -> (Cudf.universe * Cudf.package)
-(** [check_request] check if there exists a solution for the give cudf document 
+
+(** [check_request] check if there exists a solution for the give cudf document
     if ?dummy is specified, adds this dummy package to the user request. This parameter
     is used to encode a list of 'essential' packages that must always be installed in
     the solution alongside with the user request.
     if ?cmd is specified, it will be used to call an external cudf solver to
     satisfy the request.
-    if ?criteria is specified it will be used as optimization criteria. 
+    if ?criteria is specified it will be used as optimization criteria.
     if ?explain is specified and there is no solution for the give request, the
     result will contain the failure reason. *)
 val check_request :
@@ -187,13 +188,12 @@ val check_request :
     external solver. It should raise [Depsolver.Unsat] on failure. *)
 val check_request_using:
   ?call_solver:(Cudf.cudf -> Cudf.preamble option * Cudf.universe) ->
-  ?criteria: string ->
   ?dummy: Cudf.package ->
   ?explain : bool ->
     Cudf.cudf -> solver_result
 
-(** Build the installation graph from a cudf solution universe and sets of packages to be 
+(** Build the installation graph from a cudf solution universe and sets of packages to be
     installed/removed (see CudfAdd.make_summary) *)
-val installation_graph: solution:Cudf.universe -> 
-  (Common.CudfAdd.Cudf_set.t * Common.CudfAdd.Cudf_set.t) -> 
+val installation_graph: solution:Cudf.universe ->
+  (Dose_common.CudfAdd.Cudf_set.t * Dose_common.CudfAdd.Cudf_set.t) ->
     Defaultgraphs.ActionGraph.G.t

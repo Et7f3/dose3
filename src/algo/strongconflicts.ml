@@ -10,8 +10,7 @@
 (*  library, see the COPYING file for more information.                               *)
 (**************************************************************************************)
 
-open Common
-open CudfAdd
+open Dose_common
 open Defaultgraphs
 
 #define __label __FILE__
@@ -24,7 +23,7 @@ type cfl_type = Explicit | Conjunctive | Other of Diagnostic.reason list
 
 module CflE = struct
   type t = Cudf.package * Cudf.package * cfl_type
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
   let default = (Cudf.default_package, Cudf.default_package, Other [])
 end
 
@@ -49,7 +48,7 @@ let cvt univ =
   | Strongconflicts_int.Other l -> Other (reason univ l);;
 
 (** strongconflicts return the list of all strong conflicts in universe.
-    
+
     invariant: the universe must contain only edos-installable packages : see
     Depsolver.trim.
 *)

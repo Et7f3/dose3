@@ -34,7 +34,7 @@ type result =
       return the installation set for the given query. Since
       not all packages are tested for installability directly, the
       installation set might be empty. In this case, the solver can
-      be called again to provide the real installation set 
+      be called again to provide the real installation set
       using the parameter [~all:true] *)
   |Failure of (unit -> reason list)
   (** If unsuccessful returns a function containing the list of reason *)
@@ -61,11 +61,11 @@ type request_int = int list
 (** {3 Helpers Functions } *)
 
 (** Turn an integer result into a cudf result *)
-val diagnosis : Common.Util.projection -> Cudf.universe ->
+val diagnosis : Dose_common.Util.projection -> Cudf.universe ->
   result_int -> request_int -> diagnosis
 
 (** Turn an integer result into a cudf result *)
-val result : Common.Util.projection -> Cudf.universe -> result_int -> result
+val result : Dose_common.Util.projection -> Cudf.universe -> result_int -> result
 
 (** Turn an integer request into a cudf request *)
 val request : Cudf.universe -> request_int -> Cudf.package list
@@ -86,7 +86,7 @@ type summary = {
 }
 val default_result : int -> summary
 
-(** [collect summary result]. Callback function to collect result 
+(** [collect summary result]. Callback function to collect result
     information in the [summary] data structure. Can be used to build
     a custom callback function for [Depsolver.listcheck] or [Depsolver.univcheck] *)
 val collect : summary -> diagnosis -> unit
@@ -95,16 +95,16 @@ val collect : summary -> diagnosis -> unit
 val pp_out_version : Format.formatter -> unit
 
 (** default package pretty printer. *)
-val pp_package : ?source:bool -> ?fields:bool -> Common.CudfAdd.pp ->
+val pp_package : ?source:bool -> ?fields:bool -> Dose_common.CudfAdd.pp ->
   Format.formatter -> Cudf.package -> unit
 
 val pp_list :
   (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a list -> unit
 
-val print_error : ?condense : bool -> ?minimal : bool -> Common.CudfAdd.pp ->
+val print_error : ?condense : bool -> ?minimal : bool -> Dose_common.CudfAdd.pp ->
   Cudf.package -> Format.formatter -> reason list -> unit
 
-(** If the installablity query is successfull, [get_installationset] return 
+(** If the installablity query is successfull, [get_installationset] return
     the associated installation set . If minimal is true (false by default),
     the installation set is restricted to the dependency cone of the packages
     specified in the installablity query. @Raise [Not_found] if the result is
@@ -119,10 +119,10 @@ val is_solution : diagnosis -> bool
     @param explain if true, print the list of all affected packages associated to
                        and installation problem. *)
 val pp_summary :
-  ?pp : Common.CudfAdd.pp ->
+  ?pp : Dose_common.CudfAdd.pp ->
   ?explain : bool -> unit -> Format.formatter -> summary -> unit
 
-(** [printf fmt d] print the output of the solver in yaml format 
+(** [printf fmt d] print the output of the solver in yaml format
     to the formatter [fmt].
     @param pp cudf package printer
     @param failure print the list of not installable packages
@@ -130,19 +130,19 @@ val pp_summary :
     @param explain for installable packages, print the associated installation set
                        for not installable packages, print the all dependencies chains *)
 val fprintf :
-  ?pp : Common.CudfAdd.pp ->
+  ?pp : Dose_common.CudfAdd.pp ->
   ?failure : bool ->
   ?success : bool ->
-  ?explain : bool -> 
-  ?minimal : bool -> 
+  ?explain : bool ->
+  ?minimal : bool ->
   ?condense : bool -> Format.formatter -> diagnosis -> unit
 
 (** like [fprintf] but print using the standard formatter *)
 val printf :
-  ?pp : Common.CudfAdd.pp ->
+  ?pp : Dose_common.CudfAdd.pp ->
   ?failure : bool -> ?success : bool -> ?explain : bool -> diagnosis -> unit
 
 (** print the explanation graph in dot format to the standard formatter *)
 val print_dot :
-  ?pp : Common.CudfAdd.pp -> ?condense : bool ->
+  ?pp : Dose_common.CudfAdd.pp -> ?condense : bool ->
   ?addmissing : bool -> ?dir : string -> diagnosis -> unit

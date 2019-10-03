@@ -13,7 +13,7 @@
 (** Strong Conflicts *)
 
 open ExtLib
-open Common
+open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
@@ -26,8 +26,8 @@ type cfl_type = Explicit | Conjunctive | Other of Diagnostic.reason_int list;;
 
 module CflE = struct
   type t = int * int * cfl_type
-  let compare = Pervasives.compare
-  let default = (0, 0, Other []) 
+  let compare = Stdlib.compare
+  let default = (0, 0, Other [])
 end
 
 (* unlabelled indirected graph, for the cache *)
@@ -43,12 +43,12 @@ let sctimer = Util.Timer.create "Strongconflicts_int.main";;
 
 (* open Depsolver_int *)
 
-module S = Set.Make (struct type t = int let compare = Pervasives.compare end)
+module S = Set.Make (struct type t = int let compare = Stdlib.compare end)
 
 let swap (p,q) = (min p q, max p q) ;;
 let to_set l = List.fold_right S.add l S.empty ;;
 
-let explicit univ = 
+let explicit univ =
   let conflict_pairs = Hashtbl.create 1023 in
   Cudf.iteri_packages (fun i p ->
     List.iter (fun j ->
@@ -64,10 +64,10 @@ let triangle reverse xpred ypred common =
   if not (S.is_empty common) then
     let xrest = S.diff xpred ypred in
     let yrest = S.diff ypred xpred in
-    let pred_pred = 
-      S.fold (fun z acc -> 
+    let pred_pred =
+      S.fold (fun z acc ->
         S.union (to_set reverse.(z)) acc
-      ) common S.empty 
+      ) common S.empty
     in
     (S.subset xrest pred_pred) && (S.subset yrest pred_pred)
   else
@@ -88,13 +88,13 @@ let strongconflicts univ =
   let cg = SG.create ~size () in
   for i = 0 to (size - 1) do
     Util.Progress.progress seedingbar;
-    Defaultgraphs.IntPkgGraph.conjdepgraph_int cg univ i ; 
+    Defaultgraphs.IntPkgGraph.conjdepgraph_int cg univ i ;
     IG.add_vertex cache i
   done;
   (* we already add the transitive closure on the fly *)
   (* let cg = Strongdeps_int.SO.O.add_transitive_closure cg in *)
 
-  debug "dependency graph : nodes %d , edges %d" 
+  debug "dependency graph : nodes %d , edges %d"
   (SG.nb_vertex cg) (SG.nb_edges cg);
 
   (* add all edges to the cache *)
@@ -114,19 +114,19 @@ let strongconflicts univ =
       |Diagnostic.SuccessInt _ -> ()
       |Diagnostic.FailureInt f ->
         CG.add_edge_e stronglist (p, (x, y, Other (f ())), q)
-    end 
+    end
   in
 
   let strongraph = CG.create () in
   Util.Progress.set_total localbar conflict_size;
 
-  (* The simplest algorithm. We iterate over all explicit conflicts, 
+  (* The simplest algorithm. We iterate over all explicit conflicts,
    * filtering out all couples that cannot possiby be in conflict
    * because either of strong dependencies or because already considered.
-   * Then we iter over the reverse dependency closures of the selected 
+   * Then we iter over the reverse dependency closures of the selected
    * conflict and we check all pairs that have not been considered before.
    * *)
-  Hashtbl.iter (fun (x,y) _ -> 
+  Hashtbl.iter (fun (x,y) _ ->
     incr i;
     Util.Progress.progress localbar;
 
@@ -164,7 +164,7 @@ let strongconflicts univ =
       let common = S.inter xpred ypred in
       if (S.cardinal xpred = 1) && (S.cardinal ypred = 1) && (S.choose xpred = S.choose ypred) then
         let p = S.choose xpred in
-        debug "triangle %s - %s (%s)" 
+        debug "triangle %s - %s (%s)"
           (CudfAdd.string_of_package pkg_x)
           (CudfAdd.string_of_package pkg_y)
           (CudfAdd.string_of_package (CudfAdd.inttopkg univ p));

@@ -12,8 +12,7 @@
 (**************************************************************************************)
 
 open Graph
-open ExtLib
-open Common
+open Dose_common
 
 let dombar = Util.Progress.create "Algo.dominators"
 
@@ -36,7 +35,7 @@ let scons (graph,pkg) = G.fold_succ S.add graph pkg (S.singleton pkg)
 
 (* the dominators are computed on the strong dependency graph
  * with transitive archs *)
-let dominators_direct ?(relative=None) graph = 
+let dominators_direct ?(relative=None) graph =
   debug "input graph SD : vertex %d - edges %d" (G.nb_vertex graph) (G.nb_edges graph);
 
   Util.Progress.set_total dombar (G.nb_vertex graph);
@@ -112,7 +111,7 @@ let dominators_tarjan graph =
 
   G.remove_vertex graph start_pkg;
   G.remove_vertex domgr start_pkg;
-  
+
   Util.Timer.start domtrtimer;
   O.transitive_reduction domgr;
   Util.Timer.stop domtrtimer ();

@@ -20,7 +20,7 @@
 
 open Graph
 open ExtLib
-open Common
+open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
@@ -29,7 +29,7 @@ include Util.Logging(struct let label = label end) ;;
 module Make (G: Sig.I ) = struct
   module VS = Set.Make (G.V)
 
-  module UndG = Imperative.Graph.Concrete(G.V) 
+  module UndG = Imperative.Graph.Concrete(G.V)
 
   let undirect g =
     let g2 = UndG.create () in
@@ -56,17 +56,17 @@ module Make (G: Sig.I ) = struct
             old_sum + (List.fold_left (fun old_sum' v' ->
                     if G.mem_edge graph v v' && v <> v'
                     then old_sum' + 1
-                    else old_sum' 	
+                    else old_sum'
             ) 0 neighbours)
-    ) 0 neighbours 
+    ) 0 neighbours
     and max_edges = if G.is_directed then n * (n-1) else n * (n-1) / 2
-  in 
-  float_of_int n_edges /. float_of_int max_edges	
+  in
+  float_of_int n_edges /. float_of_int max_edges
 
-  let average_distance graph vertex = 
+  let average_distance graph vertex =
     let rec add_successors distance visited vertices =
       (* Add successors breadth-first, we want the shortest path we can find *)
-      let succs = ref [] in 
+      let succs = ref [] in
       let (n, sum) =
         List.fold_left (fun (old_n, old_sum) v ->
           if not (VS.mem v !visited) then
@@ -94,12 +94,12 @@ module Make (G: Sig.I ) = struct
 
   module MSin = Map.Make (struct
     type t = (G.V.t * G.t ref)
-    let compare (v1,g) (v2,g) = (G.in_degree !g v1) - (G.in_degree !g v2)
+    let compare (v1,_) (v2,g) = (G.in_degree !g v1) - (G.in_degree !g v2)
   end)
 
   module MSout = Map.Make (struct
     type t = (G.V.t * G.t ref)
-    let compare (v1,g) (v2,g) = (G.out_degree !g v1) - (G.out_degree !g v2)
+    let compare (v1,_) (v2,g) = (G.out_degree !g v1) - (G.out_degree !g v2)
   end)
 
   let _avgdegree = ref None
@@ -120,7 +120,7 @@ module Make (G: Sig.I ) = struct
         try Hashtbl.replace h d ((Hashtbl.find h d) + 1)
         with Not_found -> Hashtbl.add h d 1
     in
-    let total = 
+    let total =
       G.fold_vertex (fun v sum ->
         let outdeg = G.out_degree graph v in
         let indeg = G.in_degree graph v in
@@ -137,7 +137,7 @@ module Make (G: Sig.I ) = struct
   let computeDegree graph =
     if Option.is_some !_avgdegree then ()
     else begin
-      let (avdeg, maxout, maxin, outdata, indata) = degree graph in
+      let (avdeg, _maxout, _maxin, outdata, indata) = degree graph in
       _avgdegree := Some(avdeg);
       _outdata := Some(outdata);
       _indata := Some(indata);
@@ -185,7 +185,7 @@ module Make (G: Sig.I ) = struct
     let h = Hashtbl.create 1031 in
     G.iter_vertex (fun v ->
       add h (G.in_degree graph v) (G.out_degree graph v)
-    ) graph; 
+    ) graph;
     h
   ;;
 
@@ -200,7 +200,7 @@ module Make (G: Sig.I ) = struct
          if m > max then m else max
        ) graph 0.0
     in
-    let c = 
+    let c =
       G.fold_vertex (fun v sum ->
         let s = (List.length (fd graph v)) in
         (sum +. (m -. (cd s)))
@@ -211,7 +211,7 @@ module Make (G: Sig.I ) = struct
   let centralityOutDegree graph = centralityDegree graph G.succ
   let centralityInDegree graph = centralityDegree graph G.pred
 
-  let clustering graph = 
+  let clustering graph =
     let n = float_of_int (G.nb_vertex graph) in
     let c =
       G.fold_vertex (fun v acc ->
@@ -221,7 +221,7 @@ module Make (G: Sig.I ) = struct
 
   let averageShortestPathLength graph =
     let n = float_of_int (G.nb_vertex graph) in
-    let c = 
+    let c =
       G.fold_vertex (fun v acc ->
         acc +. (average_distance graph v)
       ) graph 0.0
@@ -230,11 +230,11 @@ module Make (G: Sig.I ) = struct
   (* strongly directed components *)
   (* weakly directed compoenents = strongly directed compoenents if the graph
    * is not direct !!! *)
-  let components graph = 
+  let components graph =
     let module C = Components.Make(G) in
     C.scc_array graph
 
-  let weaklycomponents graph = 
+  let weaklycomponents graph =
     let module C = Components.Make(UndG) in
     C.scc_array (undirect graph)
 
@@ -261,9 +261,9 @@ module Make (G: Sig.I ) = struct
   let averageTwoStepReach graph =
     let module S = Set.Make(struct type t = G.vertex let compare = compare end) in
     let n = float_of_int (G.nb_vertex graph) in
-    let t = 
+    let t =
       G.fold_vertex (fun i0 total ->
-        let s = 
+        let s =
           G.fold_succ (fun i1 set1 ->
             G.fold_succ (fun i2 set2 ->
               S.add i2 set2
@@ -314,6 +314,6 @@ module Make (G: Sig.I ) = struct
       Hashtbl.add vv v (Hashtbl.fold (fun k v acc -> max v acc) h 0)
 
     ) gr
-  *)    
+  *)
 
 end

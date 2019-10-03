@@ -13,7 +13,7 @@
 (** Strong Dependencies *)
 
 open ExtLib
-open Common
+open Dose_common
 
 #define __label __FILE__
 let label =  __label ;;
@@ -46,12 +46,12 @@ let check_strong univ transitive graph solver p l =
       let pkg_q = CudfAdd.inttopkg univ q in
       if p <> q then
         if not(Defaultgraphs.PackageGraph.G.mem_edge graph pkg_p pkg_q) then
-          if strong_depends solver p q then 
+          if strong_depends solver p q then
             Defaultgraphs.PackageGraph.add_edge ~transitive graph pkg_p pkg_q
   ) l
 
 (* true if at least one dependency is disjunctive *)
-let somedisj (`CudfPool (_,cudfpool)) id = 
+let somedisj (`CudfPool (_,cudfpool)) id =
   let (depends,_) = cudfpool.(id) in
   if List.length depends > 0 then
     try
@@ -61,7 +61,7 @@ let somedisj (`CudfPool (_,cudfpool)) id =
   else false
 
 (** [strongdeps l] build the strong dependency graph of l *)
-(* each package has a node in the graph, even if it does not have  
+(* each package has a node in the graph, even if it does not have
    any strong dependencies. If pkglist_size <> universe_size then we have to
    check the strong dependencies in any cases, as a disjunctive dependency
    might be hidden in the closure.
@@ -78,7 +78,7 @@ let strongdeps_int ?(transitive=true) graph univ pkglist =
     Util.Progress.progress mainbar;
     Defaultgraphs.PackageGraph.G.add_vertex graph pkg;
     let id = CudfAdd.pkgtoint univ pkg in
-    if (pkglist_size <> universe_size) || (somedisj cudfpool id) then begin 
+    if (pkglist_size <> universe_size) || (somedisj cudfpool id) then begin
       let closure = Depsolver_int.dependency_closure_cache cudfpool [id] in
       let solver = Depsolver_int.init_solver_closure ~global_constraints cudfpool closure in
       match Depsolver_int.solve solver ~explain:true [id] with
@@ -106,7 +106,7 @@ let strongdeps_univ ?(transitive=true) univ =
   Util.Progress.set_total conjbar size;
 
   Util.Timer.start conjtimer;
-  let l = 
+  let l =
     Cudf.fold_packages (fun acc pkg ->
       Util.Progress.progress conjbar;
       Defaultgraphs.PackageGraph.conjdepgraph_int ~transitive graph univ pkg;
@@ -124,30 +124,30 @@ let strongdeps_univ ?(transitive=true) univ =
   g
 ;;
 
-(** return the impact set (list) of the node [q] in [graph] *)
-(** invariant : we assume the graph is NOT detransitivitized *)
-let impactlist = Defaultgraphs.PackageGraph.pred_list
+(** return the impact set (list) of the node [q] in [graph]
+    invariant : we assume the graph is NOT detransitivitized *)
+(*let impactlist = Defaultgraphs.PackageGraph.pred_list*)
 
-(** return the list of strong dependencies of the node [q] in [graph] *)
-(** invariant : we assume the graph is NOT detransitivitized *)
-let stronglist = Defaultgraphs.PackageGraph.succ_list
+(** return the list of strong dependencies of the node [q] in [graph]
+    invariant : we assume the graph is NOT detransitivitized *)
+(*let stronglist = Defaultgraphs.PackageGraph.succ_list*)
 
-let impactset = Defaultgraphs.PackageGraph.pred_set
+(*let impactset = Defaultgraphs.PackageGraph.pred_set*)
 
-let strongset = Defaultgraphs.PackageGraph.succ_set
+(*let strongset = Defaultgraphs.PackageGraph.succ_set*)
 
 
-(** [strongdeps u l] build the strong dependency graph of all packages in 
-    [l] wrt the universe [u] *)
+(** [strongdeps u l] build the strong dependency graph of all packages in
+    l wrt the universe u *)
 let strongdeps ?(transitive=true) universe pkglist =
   strongdeps ~transitive universe (Depsolver.trimlist universe pkglist)
 
-(** [strongdeps_univ u] build the strong dependency graph of 
+(** [strongdeps_univ u] build the strong dependency graph of
     all packages in the universe [u] *)
 let strongdeps_univ ?(transitive=true) universe =
   strongdeps_univ ~transitive (Depsolver.trim universe)
 
-(** compute the impact set of the node [q], that is the list of all 
+(** compute the impact set of the node [q], that is the list of all
     packages [p] that strong depends on [q] *)
 let impactset = Defaultgraphs.PackageGraph.pred_list
 
@@ -159,7 +159,7 @@ let conjdeps_univ universe =
   ) (Depsolver.trim universe);
   g
 
-(** compute the conjunctive dependency graph considering only packages 
+(** compute the conjunctive dependency graph considering only packages
     in [pkglist] *)
 let conjdeps universe pkglist =
   let g = Defaultgraphs.PackageGraph.G.create () in
