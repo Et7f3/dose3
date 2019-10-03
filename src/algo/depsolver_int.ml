@@ -16,8 +16,9 @@ open Dose_common
 let progressbar_init = Util.Progress.create "Depsolver_int.init_solver"
 
 let progressbar_univcheck =
-  Util.Progress.create "Depsolver_int.univcheck"#define __label __FILE__
+  Util.Progress.create "Depsolver_int.univcheck"
 
+#define __label __FILE__
 let label = __label
 
 include Util.Logging (struct

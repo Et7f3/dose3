@@ -32,7 +32,7 @@ type rawpackage =
   |Opam of Dose_opam.Packages.package
   |Npm of Dose_npm.Packages.package
   |Edsp of Dose_debian.Packages.package
-  |Csw of Csw.Packages.package
+  |Csw of Dose_opencsw.Packages.package
 #ifdef HASRPM
   |Rpm of Rpm.Packages.package
 #endif
@@ -106,21 +106,21 @@ let deb_load_list options ?(status=[]) ?(raw=false) dll =
   Util.Timer.stop deb_load_list_timer l
 
 let npm_load_list file =
-  let (request,pkglist) = Npm.Packages.input_raw file in
+  let (_request,pkglist) = Dose_npm.Packages.input_raw file in
   let tables = Dose_pef.Pefcudf.init_tables Dose_versioning.SemverNode.compare pkglist in
   let from_cudf (p,i) = Dose_pef.Pefcudf.get_real_version tables (p,i) in
   let to_cudf (p,v) = (p, Dose_pef.Pefcudf.get_cudf_version tables (p,v)) in
   let cl = List.map (Dose_pef.Pefcudf.tocudf tables) pkglist in
-  let preamble = Npm.Npmcudf.preamble in
+  let preamble = Dose_npm.Npmcudf.preamble in
   let request = Cudf.default_request in
   (*
-  let request = Npm.Npmcudf.requesttocudf tables (Cudf.load_universe cl) request in
+  let request = Dose_npm.Npmcudf.requesttocudf tables (Cudf.load_universe cl) request in
   *)
   (preamble,[cl;[]],request,from_cudf,to_cudf,None,[])
 
 let opam_load_list ?options file =
   let (request,pkglist) = Dose_opam.Packages.input_raw file in
-  let tables = Dose_pef.Pefcudf.init_tables Dose_versioning.Dose_debian.compare pkglist in
+  let tables = Dose_pef.Pefcudf.init_tables Dose_versioning.Debian.compare pkglist in
   let from_cudf (p,i) = Dose_pef.Pefcudf.get_real_version tables (p,i) in
   let to_cudf (p,v) = (p, Dose_pef.Pefcudf.get_cudf_version tables (p,v)) in
   let options =
@@ -155,15 +155,15 @@ let pef_load_list ?compare dll =
 
 let csw_load_list dll =
   let pkglist = List.flatten dll in
-  let tables = Csw.Cswcudf.init_tables pkglist in
-  let from_cudf (p,i) = (p,None,Csw.Cswcudf.get_real_version tables (p,i)) in
-  let to_cudf (p,v) = (p, Csw.Cswcudf.get_cudf_version tables (p,v)) in
+  let tables = Dose_opencsw.Cswcudf.init_tables pkglist in
+  let from_cudf (p,i) = (p,None,Dose_opencsw.Cswcudf.get_real_version tables (p,i)) in
+  let to_cudf (p,v) = (p, Dose_opencsw.Cswcudf.get_cudf_version tables (p,v)) in
   let cll =
     List.map (fun l ->
-      List.map (Csw.Cswcudf.tocudf tables) l
+      List.map (Dose_opencsw.Cswcudf.tocudf tables) l
     ) dll
   in
-  let preamble = Csw.Cswcudf.preamble in
+  let preamble = Dose_opencsw.Cswcudf.preamble in
   let request = Cudf.default_request in
   (preamble,cll,request,from_cudf,to_cudf,None,[])
 
@@ -215,8 +215,8 @@ let deb_load_universe options ?(raw=false) l =
   let (pr,cll,r,f,t,w,e) = deb_load_list options ~raw l in
   (pr,Cudf.load_universe (List.flatten cll), r, f, t, w,e)
 
+(* transform a list of rpm control stanza into a cudf packages list *)
 [@@@warning "-27"]
-(** transform a list of rpm control stanza into a cudf packages list *)
 let rpm_load_list dll =
 #ifdef HASRPM
   let tables =  Rpm.Rpmcudf.init_tables (List.flatten dll) in
@@ -309,15 +309,17 @@ let deb_parse_input options ?(status=[]) ?(raw=false) urilist =
     List.map (fun l ->
       List.fold_left (fun acc (t,(_,_,_,_,f),_) ->
           match t with
-          | `Deb -> List.fold_left (fun acc p -> (Deb p)::acc) acc (Dose_debian.Packages.input_raw ~archs [f])
-          | `DebSrc -> List.fold_left (fun acc p -> (DebSrc p)::acc) acc (Dose_debian.Sources.input_raw ~archs [f])
+          | `Deb -> List.fold_left (fun acc p ->
+              (Deb p)::acc) acc (Dose_debian.Packages.input_raw ~archs [f])
+          | `DebSrc -> List.fold_left (fun acc p ->
+              (DebSrc p)::acc) acc (Dose_debian.Sources.input_raw ~archs [f])
           | _ -> fatal "cannot handle input"
           ) [] l
     ) urilist
   in
   deb_load_list options ~status ~raw dll
 
-let pef_parse_input ?compare options urilist =
+let pef_parse_input ?compare urilist =
   let extras = [("maintainer",None)] in
   let dll =
     List.map (fun l ->
@@ -327,7 +329,7 @@ let pef_parse_input ?compare options urilist =
   in
   pef_load_list ?compare dll
 
-let npm_parse_input ?options urilist =
+let npm_parse_input urilist =
   match urilist with
   |[[p]] when (unpack `Npm p) = "-" -> fatal "no stdin for npm yet"
   |[[p]] -> npm_load_list (unpack `Npm p)
@@ -353,7 +355,7 @@ let csw_parse_input urilist =
   let dll =
     List.map (fun l ->
         let filelist = unpack_l `Csw l in
-        Csw.Packages.input_raw filelist
+        Dose_opencsw.Packages.input_raw filelist
     ) urilist
   in
   csw_load_list dll
@@ -391,7 +393,7 @@ let parse_input ?(options=None) ?(raw=false) ?compare urilist =
 
   |`Deb, None
   |`DebSrc, None -> deb_parse_input Dose_debian.Debcudf.default_options ~raw filelist
-  |`Pef, None -> pef_parse_input ?compare Dose_debian.Debcudf.default_options filelist
+  |`Pef, None -> pef_parse_input ?compare filelist
 
   |`Deb, Some (StdOptions.Deb opt)
   |`DebSrc, Some (StdOptions.Deb opt) -> deb_parse_input opt ~raw filelist
@@ -402,7 +404,7 @@ let parse_input ?(options=None) ?(raw=false) ?compare urilist =
   |`Npm, _ -> npm_parse_input filelist
 (* |`Opam, Some (StdOptions.Opam options) -> opam_parse_input ~options filelist *)
 
-  |`Pef, Some (StdOptions.Pef opt) -> pef_parse_input ?compare opt filelist
+  |`Pef, Some (StdOptions.Pef _) -> pef_parse_input ?compare filelist
 
   |`Csw, None -> csw_parse_input filelist
 

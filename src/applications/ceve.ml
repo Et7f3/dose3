@@ -12,9 +12,9 @@
 (**************************************************************************************)
 
 open ExtLib
-open Common
-open Algo
-open Doseparse
+open Dose_common
+open Dose_algo
+open Dose_doseparse
 
 #define __label __FILE__
 let label =  __label ;;
@@ -48,8 +48,6 @@ module Options = struct
   let grp_type = grp_option ~default:"syn" ()
   let request = StdOptions.incr_str_list ()
 
-  open OptParser
-
   include StdOptions.InputOptions ;;
   StdOptions.InputOptions.add_options ~default:["latest";"trim";"inputtype";"compare"] options ;;
   StdOptions.InputOptions.add_option options ~short_name:'c' ~long_name:"cone" ~help:"dependency cone" cone;;
@@ -80,18 +78,18 @@ let loadl to_cudf l =
       match sel with
       |None -> [(encname, None)]
       |Some(op,v) ->
-          [(encname,Some(Pef.Pefcudf.pefcudf_op op,snd(to_cudf (encname,v))))]
+          [(encname,Some(Dose_pef.Pefcudf.pefcudf_op op,snd(to_cudf (encname,v))))]
     ) l
   )
 ;;
 
 let parse_request to_cudf l =
-  let pkgs_of s = (* convert request into list of packages *) 
+  let pkgs_of s = (* convert request into list of packages *)
     let rs = String.strip (snd (String.split s " ")) in
     let field = ("ceve pkg req",(Format822.dummy_loc,rs)) in
-    let v = Pef.Packages.lexbuf_wrapper Pef.Packages_parser.vpkglist_top field in
-    loadl to_cudf v 
-  in              
+    let v = Dose_pef.Packages.lexbuf_wrapper Dose_pef.Packages_parser.vpkglist_top field in
+    loadl to_cudf v
+  in
   let parse acc s =
     if String.starts_with s "install: " then
       { acc with Cudf.install = pkgs_of s}
@@ -121,7 +119,7 @@ let nr_conflicts univ =
 let main () =
   let posargs = OptParse.OptParser.parse_argv Options.options in
   let (input_type,implicit) =
-    if OptParse.Opt.is_set Options.inputtype then 
+    if OptParse.Opt.is_set Options.inputtype then
       (Url.scheme_of_string (OptParse.Opt.get Options.inputtype),true)
     else
       (Input.guess_format [posargs],false)
@@ -139,30 +137,30 @@ let main () =
   in
 
   let (fg,bg) = Options.parse_cmdline (input_type,implicit) posargs in
-  let (preamble,pkgll,request,from_cudf,to_cudf,rawll,global_constraints) =
+  let (preamble,pkgll,request,_from_cudf,to_cudf,rawll,global_constraints) =
     StdLoaders.load_list ~options ~raw [fg;bg]
   in
-  let request = 
+  let request =
     let l = OptParse.Opt.get Options.request in
-    if l <> [] then parse_request to_cudf l else request 
+    if l <> [] then parse_request to_cudf l else request
   in
   let (fg_pkglist, bg_pkglist) =
     match pkgll with [fg;bg] -> (fg,bg) | _ -> assert false
   in
   let universe =
     let s = CudfAdd.to_set (fg_pkglist @ bg_pkglist) in
-    let u = 
+    let u =
       let sl = CudfAdd.Cudf_set.elements s in
       if OptParse.Opt.is_set Options.latest then
         let l = CudfAdd.latest ~n:(OptParse.Opt.get Options.latest) sl in
         Cudf.load_universe l
-      else 
+      else
         Cudf.load_universe sl
     in
     if OptParse.Opt.get Options.trim then Depsolver.trim  u else u
   in
   let get_cudfpkglist ((n,a),c) =
-    let (name,filter) = Pef.Pefcudf.pefvpkg to_cudf ((n,a),c) in
+    let (name,filter) = Dose_pef.Pefcudf.pefvpkg to_cudf ((n,a),c) in
     CudfAdd.who_provides universe (name,filter)
   in
 
@@ -188,11 +186,11 @@ let main () =
   in
 
   let plist =
-    if OptParse.Opt.is_set Options.cone then 
+    if OptParse.Opt.is_set Options.cone then
       pkg_cone ()
     else if OptParse.Opt.is_set Options.reverse_cone then
       pkg_reverse_cone ()
-    else 
+    else
       Cudf.get_packages universe
   in
 
@@ -201,7 +199,7 @@ let main () =
     let u = Cudf.load_universe l in
     let doc = (preamble,u,request) in
     let oc =
-      if OptParse.Opt.is_set Options.outfile then 
+      if OptParse.Opt.is_set Options.outfile then
         open_out (OptParse.Opt.get Options.outfile)
       else stdout
     in
@@ -240,23 +238,23 @@ let main () =
       if t = "deb" then
         List.iter (function
           | StdLoaders.Deb p -> p#pp oc
-          | StdLoaders.DebSrc p -> ()
+          | StdLoaders.DebSrc _ -> ()
           | _ -> assert false
         ) (List.map cudf2deb l)
       else if t = "debsrc" then
         List.iter (function
-          | StdLoaders.Deb p -> ()
+          | StdLoaders.Deb _ -> ()
           | StdLoaders.DebSrc p -> p#pp oc
           | _ -> assert false
         ) (List.map cudf2deb l)
     end;
     |"table" ->
       Printf.fprintf oc "%d\t%d\t%d\n"
-      (Cudf.universe_size u) 
-      (Defaultgraphs.SyntacticDependencyGraph.G.nb_edges 
+      (Cudf.universe_size u)
+      (Defaultgraphs.SyntacticDependencyGraph.G.nb_edges
         (Defaultgraphs.SyntacticDependencyGraph.dependency_graph u))
       (nr_conflicts u)
-    |("dot" | "gml" | "grml") as t -> 
+    |("dot" | "gml" | "grml") as t ->
       let fmt = Format.formatter_of_out_channel oc in
       begin match OptParse.Opt.get Options.grp_type with
         |"syn" ->
@@ -276,7 +274,7 @@ let main () =
               (* if input are Debian packages and --deb-ignore-essential was
                * not given, connect all binary packages to the Essential:yes
                * packages *)
-              if not(OptParse.Opt.get Options.deb_ignore_essential) && 
+              if not(OptParse.Opt.get Options.deb_ignore_essential) &&
                 (input_type = `Deb || input_type = `DebSrc) then begin
                 let essential = List.filter CudfAdd.is_essential l in
                 Defaultgraphs.PackageGraph.G.iter_edges
