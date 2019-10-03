@@ -16,10 +16,10 @@
 (******************************************************************************)
 
 open ExtLib
-open Common
-open Algo
-open Debian
-open Doseparse
+open Dose_common
+open Dose_algo
+open Dose_debian
+open Dose_doseparse
 
 module Options = struct
   open OptParse
@@ -41,7 +41,7 @@ module Options = struct
   StdOptions.DistcheckOptions.add_options ~default options ;
 
   include StdOptions.InputOptions ;;
-  let default = 
+  let default =
     List.fold_left (fun acc e ->
       List.remove acc e
     ) StdOptions.InputOptions.default_options ["inputtype";"compare"]
@@ -71,7 +71,7 @@ end
 let label =  __label ;;
 include Util.Logging(struct let label = label end) ;;
 
-let timer = Util.Timer.create "Solver" 
+let timer = Util.Timer.create "Solver"
 
 let main () =
   let posargs = OptParse.OptParser.parse_argv Options.options in
@@ -101,34 +101,34 @@ let main () =
   let cudftosrc_table = Hashtbl.create 30000 in
 
   let deb_load_list options ?(status=[]) sources urilist =
-    let native = Option.get options.Debian.Debcudf.native in
+    let native = Option.get options.Dose_debian.Debcudf.native in
     let archs =
       if native <> "" then
-        native :: options.Debian.Debcudf.foreign
+        native :: options.Dose_debian.Debcudf.foreign
       else []
     in
     let dll =
       List.map (fun filelist ->
-        Debian.Packages.input_raw ~archs filelist
+        Dose_debian.Packages.input_raw ~archs filelist
       ) urilist
     in
     let pkglist = List.flatten dll in
-    let pkglist = if status = [] then pkglist else Debian.Packages.merge status pkglist in
-    let origsourcelist = 
+    let pkglist = if status = [] then pkglist else Dose_debian.Packages.merge status pkglist in
+    let origsourcelist =
       if not(Option.is_none sources) then
         Sources.input_raw ~archs [Option.get sources]
       else []
     in
-    let srclist = 
+    let srclist =
       if not(Option.is_none sources) then
         Sources.sources2packages ~noindep:true ~noarch:false ~profiles:[] native native origsourcelist
       else []
     in
-    let tables = Debian.Debcudf.init_tables ~options (srclist@pkglist) in
-    let from_cudf (p,i) = Debian.Debcudf.get_real_version tables (p,i) in
-    let to_cudf (p,v) = (p,Debian.Debcudf.get_cudf_version tables (p,v)) in
+    let tables = Dose_debian.Debcudf.init_tables ~options (srclist@pkglist) in
+    let from_cudf (p,i) = Dose_debian.Debcudf.get_real_version tables (p,i) in
+    let to_cudf (p,v) = (p,Dose_debian.Debcudf.get_cudf_version tables (p,v)) in
     let srcl =
-      let dl = List.map (Debian.Debcudf.tocudf tables ~options) srclist in
+      let dl = List.map (Dose_debian.Debcudf.tocudf tables ~options) srclist in
       List.iter2 (fun cudfpkg -> fun srcpkg ->
         let id = (cudfpkg.Cudf.package,cudfpkg.Cudf.version) in
         Hashtbl.add cudftosrc_table id srcpkg
@@ -139,20 +139,20 @@ let main () =
     let cll =
       List.map (fun l ->
         List.map (fun debpkg ->
-          let cudfpkg = Debian.Debcudf.tocudf tables ~options debpkg in
+          let cudfpkg = Dose_debian.Debcudf.tocudf tables ~options debpkg in
           let id = (cudfpkg.Cudf.package,cudfpkg.Cudf.version) in
           Hashtbl.add cudftodeb_table id debpkg;
           cudfpkg
-        ) (Debian.Packages.merge status l)
+        ) (Dose_debian.Packages.merge status l)
       ) dll
     in
-    let preamble = Debian.Debcudf.preamble in
-    let global_constraints = Debian.Debcudf.get_essential ~options tables in
+    let preamble = Dose_debian.Debcudf.preamble in
+    let global_constraints = Dose_debian.Debcudf.get_essential ~options tables in
     (preamble,cll,srcl,from_cudf,to_cudf,global_constraints)
   in
 
   let sources = OptParse.Opt.opt Options.sources in
-  let (preamble,pkgll,srclist,from_cudf,to_cudf,global_constraints) =
+  let (_preamble,pkgll,srclist,from_cudf,to_cudf,global_constraints) =
     deb_load_list options sources [fg;bg]
   in
 
@@ -160,14 +160,14 @@ let main () =
     match pkgll with [fg;bg] -> (fg,bg) | _ -> assert false
   in
 
-  let fg_pkglist = 
+  let fg_pkglist =
     if OptParse.Opt.is_set Options.latest then
       CudfAdd.latest ~n:(OptParse.Opt.get Options.latest) fg_pkglist
     else fg_pkglist
   in
-  let universe = 
+  let universe =
     let s = CudfAdd.to_set (srclist @ fg_pkglist @ bg_pkglist) in
-    Cudf.load_universe (CudfAdd.Cudf_set.elements s) 
+    Cudf.load_universe (CudfAdd.Cudf_set.elements s)
   in
   let universe_size = Cudf.universe_size universe in
 
@@ -180,12 +180,12 @@ let main () =
     Cudf_printer.pp_universe oc universe
   end;
 
-  let checklist = 
+  let checklist =
     if OptParse.Opt.is_set Options.checkonly then begin
       info "--checkonly specified, consider all packages as background packages";
       List.flatten (
         List.map (fun ((n,a),c) ->
-          let (name,filter) = Pef.Pefcudf.pefvpkg to_cudf ((n,a),c) in
+          let (name,filter) = Dose_pef.Pefcudf.pefvpkg to_cudf ((n,a),c) in
           Cudf.lookup_packages ~filter universe name
         ) (OptParse.Opt.get Options.checkonly)
       )
@@ -198,7 +198,7 @@ let main () =
   let failure = OptParse.Opt.get Options.failure in
   let explain = OptParse.Opt.get Options.explain in
   let minimal = OptParse.Opt.get Options.minimal in
-  let oc = 
+  let oc =
     if OptParse.Opt.is_set Options.outfile then
       open_out (OptParse.Opt.get Options.outfile)
     else
@@ -216,7 +216,7 @@ let main () =
   let result = Depsolver.edos_coinstall ~global_constraints universe checklist in
   ignore(Util.Timer.stop timer ());
 
-  let exitcode = 
+  let exitcode =
     if Diagnostic.is_solution result then begin
       let is = Diagnostic.get_installationset result in
       begin if Option.is_none sources then
@@ -228,7 +228,7 @@ let main () =
           with Not_found -> assert false
         ) is
       else
-        let l = 
+        let l =
           List.unique (
             List.map (fun binpkg ->
               let cudfpkg = Sources.get_src_package universe binpkg in
@@ -247,7 +247,7 @@ let main () =
       Format.fprintf fmt "@]@.";
       let fn = List.length fg_pkglist in
       let bn = List.length bg_pkglist in
-      let nb,nf = 
+      let nb,nf =
         let cl = List.length checklist in
         if cl != 0 then ((fn + bn) - cl,cl) else (bn,fn)
       in
@@ -258,7 +258,7 @@ let main () =
     1 (* at least one package is not installable *)
     end
   in
-  
+
   exitcode
 ;;
 
