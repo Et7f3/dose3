@@ -1,0 +1,10 @@
+(lang dune 1.11)
+(generate_opam_files true)
+(package
+ (name dose-versioning)
+ (depends
+  (dune (and :build (> 1.11)))
+  (cppo (and :build (> 1.6.6)))
+  (extlib (> 1.7.6))
+ )
+)

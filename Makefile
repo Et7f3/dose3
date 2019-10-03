@@ -27,7 +27,12 @@ myocamlbuild.ml: myocamlbuild.ml.pp
 
 all: libs apps man
 
-apps: addnotrpm myocamlbuild.ml itarget $(BYTELIBS) $(OPTLIBS) 
+files=$(shell find src/ \( -name "*.ml" -o -name "*.mli"  -o -name "*.mlt" \) -type f -print)
+
+fmt:
+	ocamlformat --inplace ${files}
+
+apps: addnotrpm myocamlbuild.ml itarget $(BYTELIBS) $(OPTLIBS)
 	$(OCAMLBUILD) $(APPFLAGS) applications/apps.otarget
 
 libs: addnotrpm myocamlbuild.ml itarget $(BYTELIBS) $(OPTLIBS) $(CMXSLIBS) $(ALIBS)
@@ -198,7 +203,7 @@ ifeq (libs,$(word 2,$(MAKECMDGOALS)))
 else
 ifdef group
 	applications/dose-tests.py --rungroup $(group) applications/dose-tests.list
-else 
+else
 ifdef unit
 	applications/dose-tests.py --runtest $(unit) applications/dose-tests.list
 else
@@ -208,7 +213,7 @@ endif
 endif
 endif
 
-testlib: 
+testlib:
 	echo $(TESTS)
 	@for i in $(TESTS); do\
 		echo "#######START TESTING $$i" ;\

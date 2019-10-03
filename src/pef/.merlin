@@ -1,0 +1,35 @@
+EXCLUDE_QUERY_DIR
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/benchmark
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/bytes
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/cudf
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/extlib
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/minisat
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/oUnit
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/ocaml
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/ounit2
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/ounit2/advanced
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/re
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/re/pcre
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/seq
+B /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/stdlib-shims
+B ../_build/default/common/.dose_common.objs/byte
+B ../_build/default/pef/.dose_pef.objs/byte
+B ../_build/default/versioning/.dose_versioning.objs/byte
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/benchmark
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/bytes
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/cudf
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/extlib
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/minisat
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/oUnit
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/ocaml
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/ounit2
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/ounit2/advanced
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/re
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/re/pcre
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/seq
+S /home/abate/Projects/repos/attic/mancoosi/dose/_opam/lib/stdlib-shims
+S ../common
+S .
+S ../versioning
+FLG -pp '/home/abate/Projects/repos/attic/mancoosi/dose/_opam/bin/cppo -V OCAML:4.08.1 -D '\''OCAMLGRAPHVERSION 186'\'''
+FLG -open Dose_pef -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs

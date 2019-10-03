@@ -1,0 +1,14 @@
+(library
+ (name dose_common)
+ (public_name dose-common)
+ (libraries extlib cudf re.pcre minisat benchmark oUnit)
+ (preprocess (action (run
+  %{bin:cppo} -V OCAML:%{ocaml_version} -D "OCAMLGRAPHVERSION 186" %{input-file})))
+ (flags (:standard))
+)
+
+(ocamllex shell_lexer)
+(ocamllex format822_lexer)
+(ocamllex criteria_lexer)
+(ocamlyacc format822_parser)
+(ocamlyacc criteria_parser)

@@ -1,0 +1,8 @@
+(library
+ (name dose_versioning)
+ (public_name dose-versioning)
+ (libraries extlib cudf dose-common)
+ (preprocess (action (run
+  %{bin:cppo} -V OCAML:%{ocaml_version} -D "OCAMLGRAPHVERSION 186" %{input-file})))
+ (flags (:standard)))
+

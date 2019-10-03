@@ -1,0 +1,10 @@
+(library
+ (name dose_npm)
+ (public_name dose-npm)
+ (libraries extlib cudf dose-common dose-versioning dose-pef)
+ (preprocess (action (run
+  %{bin:cppo} -V OCAML:%{ocaml_version} -D "OCAMLGRAPHVERSION 186" %{input-file})))
+ (flags (:standard)))
+
+(ocamllex npm_lexer)
+(ocamlyacc npm_parser)

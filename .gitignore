@@ -14,3 +14,6 @@ doc/manpages/*.1
 *.itarget
 */*\.swp
 myocamlbuild.ml
+.merlin
+*.install
+*.opam
