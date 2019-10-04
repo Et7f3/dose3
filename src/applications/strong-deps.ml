@@ -38,8 +38,8 @@ module Options = struct
 
 end
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_applications.strong-deps" end) ;;
 
 module G = Defaultgraphs.PackageGraph.G

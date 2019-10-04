@@ -14,8 +14,8 @@ open ExtLib
 open Dose_common
 open CudfAdd
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_algo.depsolver" end) ;;
 
 type solver = Depsolver_int.solver

@@ -51,8 +51,8 @@ module Options = struct
   add options ~long_name:"trim" ~help:"Consider only installable packages" trim;
 end
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_applications.smallworld" end) ;;
 
 (**********************************)

@@ -11,8 +11,10 @@ apps:
 		src/applications/challenged.exe \
 		src/applications/outdated.exe \
 		src/applications/aptCudf.exe \
+		src/applications/debBuildcheck.exe \
 		src/applications/debCoinstall.exe
 	@cp _build/default/src/applications/distcheck.exe dose-distcheck
+	@cp _build/default/src/applications/debBuildcheck.exe dose-debcheck
 	@cp _build/default/src/applications/challenged.exe dose-challenged
 	@cp _build/default/src/applications/outdated.exe dose-outdated
 	@cp _build/default/src/applications/ceve.exe dose-ceve

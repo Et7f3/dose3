@@ -15,8 +15,8 @@
 open ExtLib
 open Dose_common
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_algo.strongdeps" end) ;;
 
 let mainbar = Util.Progress.create "Strongdeps_int.main"

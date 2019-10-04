@@ -503,6 +503,7 @@ let main () =
     let explain = false in
     match solver with
     |"internal" ->
+        (*
         #ifdef HASMCCS
         begin
           let (u,dr) = Dose_algo.Depsolver.add_dummy universe request dummy in
@@ -518,8 +519,8 @@ let main () =
           (* |Some(p,s) -> Dose_algo.Depsolver.Sat(Some p,s) *)
         end
         #else
+          *)
           raise Not_found
-        #endif
     |_ ->
       let exec_pat = fst (parse_solver_spec (Filename.concat solver_dir solver)) in
       Dose_algo.Depsolver.check_request ~cmd:exec_pat ~dummy ~criteria ~explain cudf

@@ -42,8 +42,8 @@ module Options = struct
   add options ~long_name:"dump" ~help:"Dump the cudf package list and exit" dump;
 end
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_applications.outdated" end) ;;
 
 let sync (sn,sv,v) p =
@@ -329,5 +329,5 @@ let main () =
 
 StdUtils.if_application
 ~alternatives:["dose-outdated";"dose3-outdated";"edos-outdated";"deb-outdated"]
-__label main ;;
+"outdated" main ;;
 

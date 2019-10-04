@@ -67,8 +67,8 @@ module Options = struct
 
 end
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_applications.debCoinstall" end) ;;
 
 let timer = Util.Timer.create "Solver"
@@ -263,5 +263,5 @@ let main () =
 ;;
 
 StdUtils.if_application
-~alternatives:["dose-deb-coinstall";"deb-coinstall"] __label main ;;
+~alternatives:["dose-deb-coinstall";"deb-coinstall"] "debCoinstall" main ;;
 

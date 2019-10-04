@@ -13,8 +13,8 @@
 open ExtLib
 open Dose_common
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_pef.printer" end) ;;
 
 let to_string_with_label (k,v) =

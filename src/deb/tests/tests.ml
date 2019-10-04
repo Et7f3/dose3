@@ -18,8 +18,9 @@
 (******************************************************************************)
 
 open OUnit
-open Common
-module Version = Versioning.Debian
+open Dose_common
+open Dose_debian
+module Version = Dose_versioning.Debian
 
 let test_dir = "tests"
 
@@ -147,7 +148,7 @@ let version_test_cases =
     (* hierarchy of parts *)
       ("2:1.1-1.1", "2:1.1-1.2", -1);
       (* hierarchy of parts *)
-    
+
   ]
 
 let dpkg_compare x y =
@@ -330,7 +331,7 @@ let string_of_relop = function
   | `Lt ->
       "<"
 
-let rec assert_delay_stub l =
+let assert_delay_stub l =
   let acc = ref l in
   fun e ->
     match !acc with
@@ -396,7 +397,7 @@ let test_cluster =
              [
                (* sourcename, sourceversion, [ list of clusters
                 * cluster version (normalized), real version, [list of packages in the cluster]
-                * ] 
+                * ]
                 *)
                  ("bb", "1", [("1", "1", [("bb", "1")])]);
                ("aa", "1", [("1", "1", [("aa", "1")])]);
@@ -491,13 +492,13 @@ let test_evolution =
       let constr = [(`Gt,"76")] in
       let vl = ["3.4";"76"] in
       let discr = Evolution.discriminant evalsel vl constr in
-      List.iter (fun (target,equiv) -> 
+      List.iter (fun (target,equiv) ->
         Printf.eprintf "(3) %s\n%!" (Evolution.string_of_range target);
         List.iter (fun k ->
           Printf.eprintf "(3) e %s\n%!" (Evolution.string_of_range k);
         ) equiv;
       ) discr;
-      List.iter (fun (target,equiv) -> assert_delay (target,equiv)) discr 
+      List.iter (fun (target,equiv) -> assert_delay (target,equiv)) discr
     );
     "discriminant (single)" >:: (fun _ ->
       let assert_delay = assert_delay_stub [ (`Lo "1",[`Hi "1"]); (`Eq "1",[]) ] in
@@ -505,17 +506,17 @@ let test_evolution =
       let vl = Evolution.all_versions constr in
       let discr = Evolution.discriminant ~bottom:true vl constr in
       (*
-      List.iter (fun (target,equiv) -> 
+      List.iter (fun (target,equiv) ->
         Printf.eprintf "(3) %s\n%!" (Evolution.string_of_range target);
         List.iter (fun k ->
           Printf.eprintf "(3) e %s\n%!" (Evolution.string_of_range k);
         ) equiv;
       ) discr;
       *)
-      List.iter (fun (target,equiv) -> assert_delay (target,equiv)) discr 
-    ); 
+      List.iter (fun (target,equiv) -> assert_delay (target,equiv)) discr
+    );
     "discriminant (cluster)" >:: (fun _ ->
-      let assert_delay = 
+      let assert_delay =
         assert_delay_stub [
           ("bb","1","1",[(`Eq "1",[]);(`Hi "1",[])]);
           ("aa","1","1",[]);
@@ -533,7 +534,7 @@ let test_evolution =
         ]
       in
       Hashtbl.iter (fun (sourcename, sourceversion) l ->
-        Printf.eprintf "(2)cluster (%s,%s)\n%!" sourcename sourceversion; 
+        Printf.eprintf "(2)cluster (%s,%s)\n%!" sourcename sourceversion;
         List.iter (fun (version,cluster) ->
           let filter x =
             match Version.split version, Version.split x with
@@ -571,7 +572,7 @@ let test_evolution =
       Hashtbl.iter (fun (sourcename, sourceversion) h ->
         Hashtbl.iter (fun version cluster ->
           let migrationlist = Debian.Evolution.migrate cluster (`Lo "1:3") in
-          List.iter (fun ((pkg,target),newtarget) -> 
+          List.iter (fun ((pkg,target),newtarget) ->
             Printf.eprintf "%s %s\n%!" pkg.Packages.name pkg.Packages.version;
             Printf.eprintf "old %s\n%!" (Evolution.string_of_range target);
             Printf.eprintf "new %s\n%!" (Evolution.string_of_range newtarget)
@@ -580,7 +581,7 @@ let test_evolution =
       ) clusters
     );
 *)
-         
+
        ]
 
 let test_multiarch =
@@ -746,7 +747,7 @@ let parse_popcon_triplets =
 let parse_pkg_req_triplets =
   let function_to_test (suite, s) = Apt.parse_pkg_req suite s in
   let returns =
-    returns_result ~printer:Pef.Printer.string_of_vpkgreq function_to_test
+    returns_result ~printer:Dose_pef.Printer.string_of_vpkgreq function_to_test
     (*  and raises  = raises_failure function_to_test *)
   in
   [
@@ -756,13 +757,13 @@ let parse_pkg_req_triplets =
     ( "suite +name=1.2",
       (Some "suite", "+name=1.2"),
       returns
-        ( Some Pef.Packages_types.I,
+        ( Some Dose_pef.Packages_types.I,
           (("name", None), Some ("=", "1.2")),
           Some "suite" ) );
     ( "suite -name=1.2",
       (Some "suite", "-name=1.2"),
       returns
-        ( Some Pef.Packages_types.R,
+        ( Some Dose_pef.Packages_types.R,
           (("name", None), Some ("=", "1.2")),
           Some "suite" ) );
     ( "suite name/suite1",
@@ -774,10 +775,10 @@ let parse_pkg_req_triplets =
     ("none name", (None, "name"), returns (None, (("name", None), None), None));
     ( "none +name",
       (None, "+name"),
-      returns (Some Pef.Packages_types.I, (("name", None), None), None) );
+      returns (Some Dose_pef.Packages_types.I, (("name", None), None), None) );
     ( "none -name",
       (None, "-name"),
-      returns (Some Pef.Packages_types.R, (("name", None), None), None) );
+      returns (Some Dose_pef.Packages_types.R, (("name", None), None), None) );
     ( "suite name",
       (Some "suite", "name"),
       returns (None, (("name", None), None), Some "suite") );
@@ -820,7 +821,7 @@ let parse_pref_package_triplets =
       "name1",
       returns
         (Apt.Pref.Package
-           (Pef.Packages.parse_name
+           (Dose_pef.Packages.parse_name
               ("parse_pref_package_triplets", (Format822.dummy_loc, "name1"))))
     );
   ]
@@ -1366,7 +1367,7 @@ let test_sources2packages =
     src#depends
   in
   let returns =
-    returns_result ~printer:Pef.Printer.string_of_vpkgformula function_to_test
+    returns_result ~printer:Dose_pef.Printer.string_of_vpkgformula function_to_test
   in
   [
     ( "any/native",
@@ -1450,11 +1451,11 @@ let test_versioned_provides =
   let leqversioned = [(("B", None), Some ("<=", "10"))] in
   let geqversioned = [(("B", None), Some (">=", "20"))] in
   let function_to_test univ =
-    let r = Algo.Depsolver.edos_coinstall univ (Cudf.get_packages univ) in
-    Algo.Diagnostic.is_solution r
+    let r = Dose_algo.Depsolver.edos_coinstall univ (Cudf.get_packages univ) in
+    Dose_algo.Diagnostic.is_solution r
   in
   let printer r = if r then "unsat" else "sat" in
-  let pr_list = Util.string_of_list ~sep:", " Pef.Printer.string_of_vpkg in
+  let pr_list = Util.string_of_list ~sep:", " Dose_pef.Printer.string_of_vpkg in
   let returns = returns_result ~printer function_to_test in
   let res =
     List.map

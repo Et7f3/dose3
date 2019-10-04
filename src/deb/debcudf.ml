@@ -22,8 +22,8 @@ open ExtLib
 open Dose_common
 module Version = Dose_versioning.Debian
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_deb.debcudf" end) ;;
 
 module SMap = Map.Make (String)

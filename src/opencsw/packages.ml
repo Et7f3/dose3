@@ -17,8 +17,8 @@ module Pcre = Re_pcre
 open ExtLib
 open Dose_common
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_opencsw.packages" end) ;;
 
 type name = string
@@ -47,7 +47,7 @@ module Set = Set.Make(struct
 end)
 
 let input_raw_priv parse_packages files =
-  let timer = Util.Timer.create __label in
+  let timer = Util.Timer.create "dose_opencsw.packages" in
   Util.Timer.start timer;
   if List.length files > 1 then info "Merging input lists" ;
   let s =

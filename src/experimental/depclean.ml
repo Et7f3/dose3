@@ -41,8 +41,8 @@ module Options = struct
 end
 
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_experimental.depclean" end) ;;
 
 (* implicit prefix of resources derived from name of executable *)

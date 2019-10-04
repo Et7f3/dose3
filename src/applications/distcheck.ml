@@ -55,8 +55,8 @@ module Options = struct
 
 end
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_applications.distcheck" end) ;;
 
 let timer = Util.Timer.create "Solver"
@@ -274,5 +274,5 @@ StdUtils.if_application
   "debcheck";"dose-debcheck"; "dose-distcheck";
   "eclipsecheck";"dose-eclipsecheck";
   "rpmcheck";"dose-rpmcheck"]
-__label main ;;
+"distcheck" main ;;
 

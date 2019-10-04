@@ -20,8 +20,6 @@ module Version = Dose_versioning.Debian
 
 let predbar = Util.Progress.create "challenged" ;;
 
-#define __label __FILE__
-let label =  __label ;;
 include Util.Logging(struct let label = "dose_applications.challenged" end) ;;
 
 module Options = struct
@@ -34,18 +32,14 @@ module Options = struct
   let downgrades = StdOpt.store_true ()
   let latest = StdOpt.store_true ()
   let cluster = StdOpt.store_true ()
-#ifdef HASPARMAP
   let ncores = StdOpt.int_option ~default:1 ()
   let chunksize = StdOpt.int_option ()
-#endif
   open OptParser ;;
 
-#ifdef HASPARMAP
   add options ~long_name:"ncores"
     ~help:"Number of cores to use on a multicore" ncores;
   add options ~long_name:"chunksize"
     ~help:"Size of each task executed by the workers (controls granularity)" chunksize;
-#endif
 
   add options ~long_name:"checkonly"
     ~help:"Check only these packages ex. sn1 (=sv1),sn2 (=sv2)" checkonly;
@@ -242,16 +236,12 @@ let challenged
   (* computing *)
   let results =
     let map f l =
-#ifdef HASPARMAP
       let ncores = OptParse.Opt.get Options.ncores in
       match OptParse.Opt.opt Options.chunksize with
         None ->
         Parmap.parmap ~ncores f (Parmap.L l)
       | Some chunksize ->
         Parmap.parmap ~ncores ~chunksize f (Parmap.L l)
-#else
-      List.map f l
-#endif
     in
     map (fun ((sn,sv,version),(cluster,vl,constr)) ->
       let starttime = Unix.gettimeofday() in
@@ -362,4 +352,4 @@ let main () =
 
 StdUtils.if_application
 ~alternatives:["dose-challenged";"dose3-challenged";"edos-challenged";"deb-challenged"]
-__label main ;;
+"challenged" main ;;

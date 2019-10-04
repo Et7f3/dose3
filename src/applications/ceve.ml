@@ -16,8 +16,8 @@ open Dose_common
 open Dose_algo
 open Dose_doseparse
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_applications.ceve" end) ;;
 
 module DGraph = Defaultgraphs.SyntacticDependencyGraph
@@ -307,4 +307,4 @@ let main () =
   ) [plist]
 ;;
 
-StdUtils.if_application ~alternatives:["dose-ceve";"ceve"] __label (fun () -> main (); 0) ;;
+StdUtils.if_application ~alternatives:["dose-ceve";"ceve"] "ceve" (fun () -> main (); 0) ;;

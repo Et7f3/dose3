@@ -22,8 +22,8 @@ open Graph
 open ExtLib
 open Dose_common
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_algo.statistics" end) ;;
 
 module Make (G: Sig.I ) = struct

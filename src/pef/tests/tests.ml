@@ -1,6 +1,5 @@
 open OUnit
-open Common
-module Version = Versioning.Debian
+module Version = Dose_versioning.Debian
 
 let returns_result ?(printer = fun _ -> "(FIXME)") function_to_test
     expected_result args () =
@@ -11,34 +10,34 @@ and raises_failure function_to_test failure_text args () =
 
 let parse_pef_vpkgformula =
   let function_to_test par =
-    let f = Pef.Packages.parse_s ~default:[] Pef.Packages.parse_vpkgformula in
-    Pef.Packages.get_field_value f par ("Depends", None)
+    let f = Dose_pef.Packages.parse_s ~default:[] Dose_pef.Packages.parse_vpkgformula in
+    Dose_pef.Packages.get_field_value ~parse:f ~par ~field:("Depends", None)
   in
   let returns = returns_result function_to_test in
   [
     ( "depends empty",
-      [("Depends", (Common.Format822.dummy_loc, ""))],
+      [("Depends", (Dose_common.Format822.dummy_loc, ""))],
       returns ("Depends", []) );
     ( "depends simple",
-      [("Depends", (Common.Format822.dummy_loc, "a"))],
+      [("Depends", (Dose_common.Format822.dummy_loc, "a"))],
       returns ("Depends", [[(("a", None), None)]]) );
     ( "depends simple constr",
-      [("Depends", (Common.Format822.dummy_loc, "a ( <= 3.4 )"))],
+      [("Depends", (Dose_common.Format822.dummy_loc, "a ( <= 3.4 )"))],
       returns ("Depends", [[(("a", None), Some ("<=", "3.4"))]]) );
     ( "depends simple arch",
-      [("Depends", (Common.Format822.dummy_loc, "a:arch1"))],
+      [("Depends", (Dose_common.Format822.dummy_loc, "a:arch1"))],
       returns ("Depends", [[(("a", Some "arch1"), None)]]) );
     ( "depends simple any",
-      [("Depends", (Common.Format822.dummy_loc, "a:any"))],
+      [("Depends", (Dose_common.Format822.dummy_loc, "a:any"))],
       returns ("Depends", [[(("a", Some "any"), None)]]) );
     ( "depends disj",
-      [("Depends", (Common.Format822.dummy_loc, "a,b"))],
+      [("Depends", (Dose_common.Format822.dummy_loc, "a,b"))],
       returns ("Depends", [[(("a", None), None)]; [(("b", None), None)]]) );
     ( "depends conj",
-      [("Depends", (Common.Format822.dummy_loc, "a|b"))],
+      [("Depends", (Dose_common.Format822.dummy_loc, "a|b"))],
       returns ("Depends", [[(("a", None), None); (("b", None), None)]]) );
     ( "depends cnf",
-      [("Depends", (Common.Format822.dummy_loc, "a|b,c"))],
+      [("Depends", (Dose_common.Format822.dummy_loc, "a|b,c"))],
       returns
         ( "Depends",
           [[(("a", None), None); (("b", None), None)]; [(("c", None), None)]]
@@ -48,31 +47,31 @@ let parse_pef_vpkgformula =
 let parse_pef_builddepsformula =
   let function_to_test par =
     let f =
-      Pef.Packages.parse_s ~default:[] Pef.Packages.parse_builddepsformula
+      Dose_pef.Packages.parse_s ~default:[] Dose_pef.Packages.parse_builddepsformula
     in
-    Pef.Packages.get_field_value f par ("BuildDepends", None)
+    Dose_pef.Packages.get_field_value ~parse:f ~par ~field:("BuildDepends", None)
   in
   let returns = returns_result function_to_test in
   (* let raises  = raises_failure function_to_test in *)
   [
     ( "build depends empty",
-      [("BuildDepends", (Common.Format822.dummy_loc, ""))],
+      [("BuildDepends", (Dose_common.Format822.dummy_loc, ""))],
       returns ("BuildDepends", []) );
     ( "build depends simple",
-      [("BuildDepends", (Common.Format822.dummy_loc, "a"))],
+      [("BuildDepends", (Dose_common.Format822.dummy_loc, "a"))],
       returns ("BuildDepends", [[((("a", None), None), [], [])]]) );
     ( "build depends simple arch filter",
-      [("BuildDepends", (Common.Format822.dummy_loc, "a [arch]"))],
+      [("BuildDepends", (Dose_common.Format822.dummy_loc, "a [arch]"))],
       returns ("BuildDepends", [[((("a", None), None), [(true, "arch")], [])]])
     );
     ( "build depends simple profile filter",
-      [("BuildDepends", (Common.Format822.dummy_loc, "a <prof>"))],
+      [("BuildDepends", (Dose_common.Format822.dummy_loc, "a <prof>"))],
       returns
         ("BuildDepends", [[((("a", None), None), [], [[(true, "prof")]])]]) );
     ( "build depends cnf profile filter",
       [
         ( "BuildDepends",
-          (Common.Format822.dummy_loc, "a <prof1> <!prof2 prof3>") );
+          (Dose_common.Format822.dummy_loc, "a <prof1> <!prof2 prof3>") );
       ],
       returns
         ( "BuildDepends",
@@ -87,22 +86,22 @@ let parse_pef_builddepsformula =
 
 let parse_pef_archlist =
   let function_to_test par =
-    let f = Pef.Packages.parse_s ~default:[] Pef.Packages.parse_archlist in
-    Pef.Packages.get_field_value f par ("Architectures", None)
+    let f = Dose_pef.Packages.parse_s ~default:[] Dose_pef.Packages.parse_archlist in
+    Dose_pef.Packages.get_field_value ~parse:f ~par ~field:("Architectures", None)
   in
   let returns = returns_result function_to_test in
   (* let raises  = raises_failure function_to_test in *)
   [
     ( "architectures",
-      [("Architectures", (Common.Format822.dummy_loc, "arch1 arch2"))],
+      [("Architectures", (Dose_common.Format822.dummy_loc, "arch1 arch2"))],
       returns ("Architectures", ["arch1"; "arch2"]) );
   ]
 
 let pefcudf_loadl =
-  let packagelist = Pef.Packages.input_raw ["tests/pef/unittests.pef"] in
-  let tables = Pef.Pefcudf.init_tables Version.compare packagelist in
+  let packagelist = Dose_pef.Packages.input_raw ["tests/pef/unittests.pef"] in
+  let tables = Dose_pef.Pefcudf.init_tables Version.compare packagelist in
   let function_to_test ?arch ?(archs = []) l =
-    Pef.Pefcudf.loadl tables ?arch ~archs l
+    Dose_pef.Pefcudf.loadl tables ?arch ~archs l
   in
   let returns ?arch ?(archs = []) =
     returns_result (function_to_test ?arch ~archs)

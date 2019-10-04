@@ -18,8 +18,8 @@ module Pcre = Re_pcre
 
 open Dose_common
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_versioning.semverNode" end) ;;
 
 type raw_version = (string * string * string * string list * string list)

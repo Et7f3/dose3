@@ -11,13 +11,13 @@
 (**************************************************************************************)
 
 open! ExtLib
-open Debian
-open Common
-open Algo
-open DoseparseNoRpm
+open Dose_debian
+open Dose_common
+open Dose_algo
+open Dose_doseparse
 
-module Src = Debian.Sources
-module Deb = Debian.Packages
+module Src = Dose_debian.Sources
+module Deb = Dose_debian.Packages
 
 module Options = struct
   open OptParse
@@ -40,7 +40,7 @@ module Options = struct
 
 
   include StdOptions.InputOptions ;;
-  let default = 
+  let default =
     List.fold_left (fun acc e ->
       List.remove acc e
     ) StdOptions.InputOptions.default_options ["inputtype";"fg";"bg";"compare"]
@@ -67,8 +67,8 @@ module Options = struct
 
 end
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_applications.debBuildcheck" end) ;;
 
 let timer = Util.Timer.create "Solver"
@@ -90,22 +90,22 @@ let main () =
     else
       Format.std_formatter
   in
-  (* we set the Debian.Debcudf options wrt the user provided options *)
+  (* we set the Dose_debian.Debcudf options wrt the user provided options *)
   let options = Options.set_deb_options () in
   (* buildarch and native arch must be set to some architecture at this point *)
-  let buildarch = Option.get options.Debian.Debcudf.native in
+  let buildarch = Option.get options.Dose_debian.Debcudf.native in
   (* hostarch can be None *)
-  let hostarch = match options.Debian.Debcudf.host with None -> "" | Some s -> s in
-  let noindep = options.Debian.Debcudf.drop_bd_indep in
-  let noarch = options.Debian.Debcudf.drop_bd_arch in
+  let hostarch = match options.Dose_debian.Debcudf.host with None -> "" | Some s -> s in
+  let noindep = options.Dose_debian.Debcudf.drop_bd_indep in
+  let noarch = options.Dose_debian.Debcudf.drop_bd_arch in
   let dropalternatives = OptParse.Opt.get Options.dropalternatives in
-  let profiles = options.Debian.Debcudf.profiles in
+  let profiles = options.Dose_debian.Debcudf.profiles in
 
   let filter_external_sources par =
     if (OptParse.Opt.get Options.includextra) then true
     else
-      try not(Pef.Packages.parse_bool
-        ("extra-source-only",(Pef.Packages.assoc "extra-source-only" par)))
+      try not(Dose_pef.Packages.parse_bool
+        ("extra-source-only",(Dose_pef.Packages.assoc "extra-source-only" par)))
       with Not_found -> true
   in
 
@@ -122,18 +122,18 @@ let main () =
 
   let pkglist, srclist =
     match posargs with
-    |[] | [_] -> fatal 
+    |[] | [_] -> fatal
       "You must provide a list of Debian Packages files and \
        a Debian Sources file"
-    |l -> 
+    |l ->
         begin match List.rev l with
         |h::t ->
           let srclist =
-            StdLoaders.deb_load_source 
-              ~dropalternatives 
-              ~profiles 
-              ~filter:filter_external_sources 
-              ~noindep ~noarch buildarch hostarch h 
+            StdLoaders.deb_load_source
+              ~dropalternatives
+              ~profiles
+              ~filter:filter_external_sources
+              ~noindep ~noarch buildarch hostarch h
           in
           let pkglist = Deb.input_raw t in
           (pkglist,srclist)
@@ -141,29 +141,29 @@ let main () =
         end
   in
   let tables = Debcudf.init_tables (srclist @ pkglist) in
-  let global_constraints = Debian.Debcudf.get_essential ~options tables in
-  let to_cudf (p,v) = (p,Debian.Debcudf.get_cudf_version tables (p,v)) in
-  let from_cudf (p,v) = Debian.Debcudf.get_real_version tables (p,v) in
-  let pp = CudfAdd.pp ?fields:None ?decode:None from_cudf in 
+  let global_constraints = Dose_debian.Debcudf.get_essential ~options tables in
+  let to_cudf (p,v) = (p,Dose_debian.Debcudf.get_cudf_version tables (p,v)) in
+  let from_cudf (p,v) = Dose_debian.Debcudf.get_real_version tables (p,v) in
+  let pp = CudfAdd.pp ?fields:None ?decode:None from_cudf in
 
   (* XXX here latest could be a bit faster if done at the same time of the cudf
      conversion *)
-  let sl = 
+  let sl =
     let l = List.map (fun pkg -> Debcudf.tocudf ~options tables pkg) srclist in
     if OptParse.Opt.is_set Options.latest then
       CudfAdd.latest ~n:(OptParse.Opt.get Options.latest) l
     else
       l
   in
-  let bl = 
+  let bl =
     List.fold_left (fun acc pkg ->
-      let pkg = 
+      let pkg =
         if OptParse.Opt.get Options.maforeign && pkg#architecture = "all" then
           pkg#set_multiarch `Foreign
         else pkg
       in
       (Debcudf.tocudf ~options tables pkg)::acc
-    ) sl pkglist 
+    ) sl pkglist
   in
 
   let universe = Cudf.load_universe bl in
@@ -183,7 +183,7 @@ let main () =
     if OptParse.Opt.is_set Options.checkonly then begin
       List.flatten (
         List.map (fun ((n,a),c) ->
-          let (name,filter) = Pef.Pefcudf.pefvpkg to_cudf (("src:"^n,a),c) in
+          let (name,filter) = Dose_pef.Pefcudf.pefvpkg to_cudf (("src:"^n,a),c) in
           Cudf.lookup_packages ~filter universe name
         ) (OptParse.Opt.get Options.checkonly)
       )
@@ -192,22 +192,22 @@ let main () =
 
   Diagnostic.pp_out_version fmt;
 
-  if Option.is_some options.Debian.Debcudf.native then
+  if Option.is_some options.Dose_debian.Debcudf.native then
     Format.fprintf fmt "native-architecture: %s@."
-      (Option.get options.Debian.Debcudf.native);
+      (Option.get options.Dose_debian.Debcudf.native);
 
-  if List.length options.Debian.Debcudf.foreign > 0 then
+  if List.length options.Dose_debian.Debcudf.foreign > 0 then
     Format.fprintf fmt "foreign-architecture: %s@."
-      (String.concat "," options.Debian.Debcudf.foreign);
+      (String.concat "," options.Dose_debian.Debcudf.foreign);
 
-  if Option.is_some options.Debian.Debcudf.host then
+  if Option.is_some options.Dose_debian.Debcudf.host then
     Format.fprintf fmt "host-architecture: %s@."
-      (Option.get options.Debian.Debcudf.host);
+      (Option.get options.Dose_debian.Debcudf.host);
 
   let results = Diagnostic.default_result universe_size in
 
   if failure || success then Format.fprintf fmt "@[<v 1>report:@,";
-  let callback d = 
+  let callback d =
     if summary then Diagnostic.collect results d ;
     if failure || success then
       Diagnostic.fprintf ~pp ~failure ~success ~explain ~minimal fmt d
@@ -231,7 +231,7 @@ let main () =
   if OptParse.Opt.is_set Options.dump then begin
     let oc = open_out (OptParse.Opt.get Options.dump) in
     info "Dumping Cudf file";
-    
+
     Cudf_printer.pp_preamble oc Debcudf.preamble;
     Printf.fprintf oc "\n";
     Cudf_printer.pp_universe oc universe
@@ -244,5 +244,5 @@ StdUtils.if_application
     "deb-buildcheck"; "debbuildcheck";"dose-builddebcheck";
     "deb-crossbuildcheck";"debcrossbuildcheck";
     "dose-debcrossbuildcheck"]
-  __label main
+  "debBuildcheck" main
 ;;

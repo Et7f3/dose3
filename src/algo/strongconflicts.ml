@@ -13,8 +13,8 @@
 open Dose_common
 open Defaultgraphs
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_algo.strongconflicts" end) ;;
 
 module ICG = Strongconflicts_int.CG

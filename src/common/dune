@@ -1,9 +1,7 @@
 (library
  (name dose_common)
  (public_name dose-common)
- (libraries extlib cudf re.pcre minisat benchmark oUnit)
- (preprocess (action (run
-  %{bin:cppo} -V OCAML:%{ocaml_version} -D "OCAMLGRAPHVERSION 186" %{input-file})))
+ (libraries extlib cudf zip bz2 re.pcre minisat)
  (flags (:standard))
 )
 

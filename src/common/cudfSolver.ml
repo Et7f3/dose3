@@ -16,8 +16,8 @@ module Pcre = Re_pcre
 
 open ExtLib
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_common.cudfSolver" end) ;;
 
 (* FIXME: unify with deb/apt.ml *)

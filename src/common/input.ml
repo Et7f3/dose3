@@ -12,13 +12,9 @@
 
 open ExtLib
 
-#define __label __FILE__
-let label =  __label ;;
 include Util.Logging(struct let label = "dose_common.input" end) ;;
 
-[@@@warning "-27"]
 let gzip_open_file file =
-#ifdef HASZIP
   let ch = Gzip.open_in file in
   let input_char ch = try Gzip.input_char ch with End_of_file -> raise IO.No_more_input in
   let read ch = try Gzip.input ch with End_of_file -> raise IO.No_more_input in
@@ -26,36 +22,26 @@ let gzip_open_file file =
   ~read:(fun () -> input_char ch)
   ~input:(read ch)
   ~close:(fun () -> Gzip.close_in ch)
-#else
-    fatal "gzip not supported. re-configure with --with-zip"
-#endif
-[@@@warning "+27"]
 ;;
 
-[@@@warning "-27"]
 let bzip_open_file file =
-#ifdef HASBZ2
   (* workaround to avoid segfault :
    * http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=602170 *)
   let _ = Bz2.version in
-  let s = " " in
+  let s = Bytes.make 1 ' ' in
   let ch = Bz2.open_in (open_in file) in
   let input_char ch =
-    try ignore (Bz2.read ch s 0 1) ; s.[0]
+    try ignore (Bz2.read ch (Bytes.to_string s) 0 1) ; Bytes.get s 0
     with End_of_file -> raise IO.No_more_input
   in
   let read ch s pos len =
-    try Bz2.read ch s pos len
+    try Bz2.read ch (Bytes.to_string s) pos len
     with End_of_file -> raise IO.No_more_input
   in
   IO.create_in
   ~read:(fun () -> input_char ch)
   ~input:(read ch)
   ~close:(fun () -> Bz2.close_in ch)
-#else
-    fatal "bzip not supported. re-configure with --with-bz2"
-#endif
-[@@@warning "+27"]
 ;;
 
 let std_open_file file = IO.input_channel (open_in file)

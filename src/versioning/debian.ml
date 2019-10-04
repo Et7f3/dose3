@@ -18,8 +18,8 @@
 open Dose_common
 module Pcre = Re_pcre
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_versioning.debian" end) ;;
 
 let is_digit = function

@@ -15,8 +15,8 @@
 open ExtLib
 open Dose_common
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_deb.sources" end) ;;
 
 class source ?(name=("Package",None)) ?(version=("Version",None))

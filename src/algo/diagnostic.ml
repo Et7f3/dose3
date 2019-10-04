@@ -14,9 +14,7 @@ module OcamlHash = Hashtbl ;;
 open ExtLib ;;
 open Dose_common ;;
 
-#define __label __FILE__
-let _label =  __label ;;
-include Util.Logging(struct let label = _label end) ;;
+include Util.Logging(struct let label = "dose_algo.diagnostic" end) ;;
 
 type reason_int =
   |DependencyInt of (int * Cudf_types.vpkg list * int list)

@@ -18,12 +18,7 @@ let progressbar_init = Util.Progress.create "Depsolver_int.init_solver"
 let progressbar_univcheck =
   Util.Progress.create "Depsolver_int.univcheck"
 
-#define __label __FILE__
-let label = __label
-
-include Util.Logging (struct
-  let label = label
-end)
+include Util.Logging (struct let label = "Depsolver_int.init_solver" end)
 
 module R = struct
   type reason = Diagnostic.reason_int

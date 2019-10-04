@@ -12,16 +12,14 @@
 
 module Pcre = Re_pcre
 open OUnit2
-open Common
+open Dose_common
 
 let returns_result ?(printer = fun _ -> "(PRINTER NOT SPECIFIED)")
-    function_to_test expected_result args () =
+    function_to_test expected_result args _ctx =
   assert_equal ~printer (function_to_test args) expected_result
 
 and raises_failure function_to_test failure_text args () =
   assert_raises (Failure failure_text) (fun () -> function_to_test args)
-
-let test_dir = "tests/common"
 
 let cudf_dir = "tests/cudf"
 
@@ -30,7 +28,7 @@ let f_legacy = Filename.concat cudf_dir "legacy.cudf"
 let test_deb_local =
   "deb local"
   >:: fun _ ->
-  let (protocol, (userOpt, passOpt, hostOpt, portOpt, path), queryOpt) =
+  let (protocol, (_userOpt, _passOpt, _hostOpt, _portOpt, path), _queryOpt) =
     Input.parse_uri "deb://Packages.gz"
   in
   assert_equal true (protocol = `Deb && path = "Packages.gz")
@@ -38,7 +36,7 @@ let test_deb_local =
 let test_deb_path =
   "deb path"
   >:: fun _ ->
-  let (protocol, (userOpt, passOpt, hostOpt, portOpt, path), queryOpt) =
+  let (protocol, (_userOpt, _passOpt, _hostOpt, _portOpt, path), _queryOpt) =
     Input.parse_uri "deb:///var/lib/Packages.gz"
   in
   assert_equal true (protocol = `Deb && path = "/var/lib/Packages.gz")
@@ -46,7 +44,7 @@ let test_deb_path =
 let test_hdlist =
   "hdlist"
   >:: fun _ ->
-  let (protocol, (userOpt, passOpt, hostOpt, portOpt, path), queryOpt) =
+  let (protocol, (_userOpt, _passOpt, _hostOpt, _portOpt, path), _queryOpt) =
     Input.parse_uri "hdlist://path/to/file"
   in
   assert_equal true (protocol = `Hdlist && path = "path/to/file")
@@ -54,7 +52,7 @@ let test_hdlist =
 let test_synth =
   "synthesis"
   >:: fun _ ->
-  let (protocol, (userOpt, passOpt, hostOpt, portOpt, path), queryOpt) =
+  let (protocol, (_userOpt, _passOpt, _hostOpt, _portOpt, path), _queryOpt) =
     Input.parse_uri "synthesis://path/to/file"
   in
   assert_equal true (protocol = `Synthesis && path = "path/to/file")
@@ -62,7 +60,7 @@ let test_synth =
 let test_cudf =
   "cudf"
   >:: fun _ ->
-  let (protocol, (userOpt, passOpt, hostOpt, portOpt, path), queryOpt) =
+  let (protocol, (_userOpt, _passOpt, _hostOpt, _portOpt, path), _queryOpt) =
     Input.parse_uri "cudf://path/to/file"
   in
   assert_equal true (protocol = `Cudf && path = "path/to/file")
@@ -116,13 +114,13 @@ let cone_cases =
   [
     ( "cone universe",
       univ_ls,
-      fun c () -> assert_equal (List.length (cone c)) (List.length univ_ls) );
+      fun c _ctx -> assert_equal (List.length (cone c)) (List.length univ_ls) );
     ( "cone pedal",
       pedal_ls,
-      fun c () -> assert_equal (cone c) pedal_ls ~printer );
+      fun c _cxt -> assert_equal (cone c) pedal_ls ~printer );
     ( "cone engine",
       engine_ls,
-      fun c () -> assert_equal (cone c) engine_cone ~printer );
+      fun c _ctx -> assert_equal (cone c) engine_cone ~printer );
   ]
 
 let criteria_parse =
@@ -336,37 +334,6 @@ let criteria_to_string =
     );
   ]
 
-let criteria_parse =
-  let function_to_test crt =
-    Criteria.parse_criteria ("test", (Format822.dummy_loc, crt))
-  in
-  let printer s = Criteria.to_string s in
-  let returns = returns_result ~printer function_to_test in
-  [
-    ( "parse upgrade",
-      "-count(new),-count(removed),-notuptodate(solution)",
-      returns (List.assoc "upgrade" Criteria.default_criteria) );
-    ( "parse trendy",
-      "-count(removed),-notuptodate(solution),-unsat_recommends(solution),-count(new)",
-      returns (List.assoc "trendy" Criteria.default_criteria) );
-    ( "parse count exact",
-      "-count(solution,APT-Release:=/experimental/)",
-      returns
-        Criteria_types.
-          [
-            Minimize
-              (Count (Solution, Some ("APT-Release", ExactMatch "experimental")));
-          ] );
-    ( "parse count regexp",
-      "-count(solution,APT-Release:~/stable|unstable/)",
-      returns
-        Criteria_types.
-          [
-            Minimize
-              (Count (Solution, Some ("APT-Release", Regexp "stable|unstable")));
-          ] );
-  ]
-
 let dummy name version =
   {Cudf.default_package with Cudf.package = name; version}
 
@@ -380,7 +347,7 @@ module PkgSetTest = OUnitDiff.SetMake (struct
   let pp_print_sep = OUnitDiff.pp_comma_separator
 end)
 
-let returns_result_pkgset function_to_test expected_result args () =
+let returns_result_pkgset function_to_test expected_result args _ctx =
   PkgSetTest.assert_equal (function_to_test args) expected_result
 
 let latest_cases =
@@ -421,7 +388,8 @@ let all =
          "cudfadd" >::: make_test_cases latest_cases;
        ]
 
-let main () = OUnit.run_test_tt_main all
-
+let main () =
+  OUnit2.run_test_tt_main all
 ;;
+
 main ()

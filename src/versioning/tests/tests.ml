@@ -1,4 +1,5 @@
 open OUnit
+open Dose_versioning
 
 let returns_result ?(printer = fun _ -> "(FIXME)") function_to_test
     expected_result args () =

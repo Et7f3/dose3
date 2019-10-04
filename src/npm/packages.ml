@@ -20,8 +20,8 @@ open Dose_common
 
 module Pcre = Re_pcre
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_npm.packages" end) ;;
 
 let lexbuf_wrapper type_parser v =

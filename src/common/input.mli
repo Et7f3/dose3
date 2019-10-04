@@ -12,17 +12,13 @@
 
 (** Input routines *)
 
-#ifdef HASZIP
 (** load a file in gzip format
     @return ExtLib.IO.input channel *)
 val gzip_open_file : string -> IO.input
-#endif
 
-#ifdef HASBZ2
 (** load a file in bzip format - Not implemented yet
     @return ExtLib.IO.input channel *)
 val bzip_open_file : string -> IO.input
-#endif
 
 (** load a non compressed file
     @return ExtLib.IO.input channel *)

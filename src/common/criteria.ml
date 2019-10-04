@@ -15,8 +15,8 @@ open Criteria_types
 
 module Pcre = Re_pcre
 
-#define __label __FILE__
-let label =  __label ;;
+
+
 include Util.Logging(struct let label = "dose_common.criteria" end) ;;
 
 let lexbuf_wrapper type_parser v =
