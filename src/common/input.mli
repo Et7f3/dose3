@@ -16,7 +16,7 @@
     @return ExtLib.IO.input channel *)
 val gzip_open_file : string -> IO.input
 
-(** load a file in bzip format - Not implemented yet
+(** load a file in bzip format
     @return ExtLib.IO.input channel *)
 val bzip_open_file : string -> IO.input
 
