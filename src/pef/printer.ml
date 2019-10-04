@@ -13,18 +13,22 @@
 open ExtLib
 open Dose_common
 
+include Util.Logging (struct
+  let label = "dose_pef.printer"
+end)
 
-
-include Util.Logging(struct let label = "dose_pef.printer" end) ;;
-
-let to_string_with_label (k,v) =
+let to_string_with_label (k, v) =
   if v <> "" then Printf.sprintf "%s: %s" k v else ""
 
 let string_of_vpkg = function
-  |((name,None),None) -> name
-  |((name,Some arch),None) -> Printf.sprintf "%s:%s" name arch
-  |((name,Some arch),Some(op,ver)) -> Printf.sprintf "%s:%s (%s %s)" name arch op ver
-  |((name,None),Some(op,ver)) -> Printf.sprintf "%s (%s %s)" name op ver
+  | ((name, None), None) ->
+      name
+  | ((name, Some arch), None) ->
+      Printf.sprintf "%s:%s" name arch
+  | ((name, Some arch), Some (op, ver)) ->
+      Printf.sprintf "%s:%s (%s %s)" name arch op ver
+  | ((name, None), Some (op, ver)) ->
+      Printf.sprintf "%s (%s %s)" name op ver
 
 let string_of_vpkglist vpkglist =
   Util.string_of_list ~sep:", " string_of_vpkg vpkglist
@@ -34,28 +38,32 @@ let string_of_vpkgformula vpkgformula =
   let string_of_AND = Util.string_of_list ~sep:", " string_of_OR in
   string_of_AND vpkgformula
 
-let string_of_builddep (vpkg,archfilter,buildfilter) =
+let string_of_builddep (vpkg, archfilter, buildfilter) =
   let string_of_filter l =
-    String.concat " " (
-      List.map (fun (b,s) ->
-        if b then s else "!"^s
-      ) l
-    )
+    String.concat " " (List.map (fun (b, s) -> if b then s else "!" ^ s) l)
   in
   let string_of_bpformula ll =
-    String.concat " " (
-      List.map (fun l ->
-          Printf.sprintf "<%s>" (string_of_filter l)
-        ) ll
-    )
+    String.concat
+      " "
+      (List.map (fun l -> Printf.sprintf "<%s>" (string_of_filter l)) ll)
   in
-  match archfilter,buildfilter with
-  |[],[] -> string_of_vpkg vpkg
-  |_,[] -> Printf.sprintf "%s [%s]" (string_of_vpkg vpkg) (string_of_filter archfilter)
-  |[],_ -> Printf.sprintf "%s %s" (string_of_vpkg vpkg) (string_of_bpformula buildfilter)
-  |_,_ ->
-      Printf.sprintf "%s [%s] %s"
-        (string_of_vpkg vpkg) 
+  match (archfilter, buildfilter) with
+  | ([], []) ->
+      string_of_vpkg vpkg
+  | (_, []) ->
+      Printf.sprintf
+        "%s [%s]"
+        (string_of_vpkg vpkg)
+        (string_of_filter archfilter)
+  | ([], _) ->
+      Printf.sprintf
+        "%s %s"
+        (string_of_vpkg vpkg)
+        (string_of_bpformula buildfilter)
+  | (_, _) ->
+      Printf.sprintf
+        "%s [%s] %s"
+        (string_of_vpkg vpkg)
         (string_of_filter archfilter)
         (string_of_bpformula buildfilter)
 
@@ -68,60 +76,79 @@ let string_of_builddeplist builddeplist =
   Util.string_of_list ~sep:", " string_of_builddep builddeplist
 
 let string_of_vpkgreq = function
-  | None,vpkg,None -> string_of_vpkg vpkg
-  | None,vpkg,Some suite -> Printf.sprintf "%s/%s" (string_of_vpkg vpkg) suite
-  | Some Packages_types.I, vpkg, None -> Printf.sprintf "+%s" (string_of_vpkg vpkg)
-  | Some Packages_types.R, vpkg, None -> Printf.sprintf "-%s" (string_of_vpkg vpkg)
-  | Some Packages_types.I, vpkg, Some suite -> Printf.sprintf "+%s/%s" (string_of_vpkg vpkg) suite
-  | Some Packages_types.R, vpkg, Some suite -> Printf.sprintf "-%s/%s" (string_of_vpkg vpkg) suite
+  | (None, vpkg, None) ->
+      string_of_vpkg vpkg
+  | (None, vpkg, Some suite) ->
+      Printf.sprintf "%s/%s" (string_of_vpkg vpkg) suite
+  | (Some Packages_types.I, vpkg, None) ->
+      Printf.sprintf "+%s" (string_of_vpkg vpkg)
+  | (Some Packages_types.R, vpkg, None) ->
+      Printf.sprintf "-%s" (string_of_vpkg vpkg)
+  | (Some Packages_types.I, vpkg, Some suite) ->
+      Printf.sprintf "+%s/%s" (string_of_vpkg vpkg) suite
+  | (Some Packages_types.R, vpkg, Some suite) ->
+      Printf.sprintf "-%s/%s" (string_of_vpkg vpkg) suite
 
 (** *)
 
-let pp_function oc ~tostring (k,v) =
-  match tostring v with
-  |"" -> ()
-  |s -> Printf.fprintf oc "%s: %s" k s
+let pp_function oc ~tostring (k, v) =
+  match tostring v with "" -> () | s -> Printf.fprintf oc "%s: %s" k s
 
-let pp_string_list ?(sep=", ") oc (k,v) =
+let pp_string_list ?(sep = ", ") oc (k, v) =
   if List.length v > 0 then
     Printf.fprintf oc "%s: %s" k (Util.string_of_list ~sep (fun s -> s) v)
 
 let pp_vpkg oc vpkg = Printf.fprintf oc "%s" (string_of_vpkg vpkg)
-let pp_vpkglist oc vpkglist = Printf.fprintf oc "%s" (string_of_vpkglist vpkglist)
+
+let pp_vpkglist oc vpkglist =
+  Printf.fprintf oc "%s" (string_of_vpkglist vpkglist)
+
 let pp_vpkgformula oc vpkgformula =
   Printf.fprintf oc "%s" (string_of_vpkgformula vpkgformula)
 
 let pp_builddep oc builddep =
   Printf.fprintf oc "%s" (string_of_builddep builddep)
+
 let pp_builddepformula oc builddepformula =
   Printf.fprintf oc "%s" (string_of_builddepformula builddepformula)
+
 let pp_builddeplist oc builddeplist =
-    Printf.fprintf oc "%s" (string_of_builddeplist builddeplist)
+  Printf.fprintf oc "%s" (string_of_builddeplist builddeplist)
 
 (** _wl -> with label *)
 
-let pp_string_wl oc (k,v) =
-  if v <> "" then Printf.fprintf oc "%s\n" (to_string_with_label (k,v))
-let pp_bool_wl oc (k,v) =
+let pp_string_wl oc (k, v) =
+  if v <> "" then Printf.fprintf oc "%s\n" (to_string_with_label (k, v))
+
+let pp_bool_wl oc (k, v) =
   if v then
-    Printf.fprintf oc "%s\n" (to_string_with_label (k,string_of_bool v))
-let pp_yes_wl oc (k,v) =
+    Printf.fprintf oc "%s\n" (to_string_with_label (k, string_of_bool v))
+
+let pp_yes_wl oc (k, v) =
   if v then
-    Printf.fprintf oc "%s\n" (to_string_with_label (k,(if v then "yes" else "no")))
+    Printf.fprintf
+      oc
+      "%s\n"
+      (to_string_with_label (k, if v then "yes" else "no"))
 
 let pp_list_wl_aux f oc = function
-  |(_,[]) -> ()
-  |(k,v) -> Printf.fprintf oc "%s: %a\n" k f v
+  | (_, []) ->
+      ()
+  | (k, v) ->
+      Printf.fprintf oc "%s: %a\n" k f v
 
 let pp_vpkglist_wl = pp_list_wl_aux pp_vpkglist
+
 let pp_vpkgformula_wl = pp_list_wl_aux pp_vpkgformula
+
 let pp_builddeplist_wl = pp_list_wl_aux pp_builddeplist
+
 let pp_builddepformula_wl = pp_list_wl_aux pp_builddepformula
 
-let pp_function_wl oc ~tostring (k,v) =
+let pp_function_wl oc ~tostring (k, v) =
   let s = tostring v in
-  if s <> "" then Printf.fprintf oc "%s\n" (to_string_with_label (k,s))
-let pp_string_list_wl ?(sep=", ") oc (k,v) =
-  if List.length v > 0 then
-    Printf.fprintf oc "%a\n" (pp_string_list ~sep) (k,v)
+  if s <> "" then Printf.fprintf oc "%s\n" (to_string_with_label (k, s))
 
+let pp_string_list_wl ?(sep = ", ") oc (k, v) =
+  if List.length v > 0 then
+    Printf.fprintf oc "%a\n" (pp_string_list ~sep) (k, v)

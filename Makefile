@@ -21,7 +21,7 @@ apps:
 	@cp _build/default/src/applications/aptCudf.exe apt-cudf
 	@cp _build/default/src/applications/debCoinstall.exe dose-deb-coinstall
 
-files=$(shell find src/ \( -name "*.ml" -o -name "*.mli"  -o -name "*.mlt" \) -type f -print)
+files=$(shell find src/ \( -name "*.ml" -o -name "*.mli"  -o -name "*.mlt" \) -not -path "src/experimental/*" -type f -print)
 
 fmt:
 	ocamlformat --enable-outside-detected-project --inplace ${files}

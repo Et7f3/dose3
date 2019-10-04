@@ -15,10 +15,11 @@ open Dose_common
 
 let progressbar_init = Util.Progress.create "Depsolver_int.init_solver"
 
-let progressbar_univcheck =
-  Util.Progress.create "Depsolver_int.univcheck"
+let progressbar_univcheck = Util.Progress.create "Depsolver_int.univcheck"
 
-include Util.Logging (struct let label = "Depsolver_int.init_solver" end)
+include Util.Logging (struct
+  let label = "Depsolver_int.init_solver"
+end)
 
 module R = struct
   type reason = Diagnostic.reason_int

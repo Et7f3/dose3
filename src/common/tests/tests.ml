@@ -114,7 +114,8 @@ let cone_cases =
   [
     ( "cone universe",
       univ_ls,
-      fun c _ctx -> assert_equal (List.length (cone c)) (List.length univ_ls) );
+      fun c _ctx -> assert_equal (List.length (cone c)) (List.length univ_ls)
+    );
     ( "cone pedal",
       pedal_ls,
       fun c _cxt -> assert_equal (cone c) pedal_ls ~printer );
@@ -388,8 +389,7 @@ let all =
          "cudfadd" >::: make_test_cases latest_cases;
        ]
 
-let main () =
-  OUnit2.run_test_tt_main all
-;;
+let main () = OUnit2.run_test_tt_main all
 
+;;
 main ()

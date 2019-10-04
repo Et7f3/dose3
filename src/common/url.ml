@@ -10,64 +10,81 @@
 (*  library, see the COPYING file for more information.                     *)
 (****************************************************************************)
 
-exception Invalid_url of string;;
+exception Invalid_url of string
 
-
-
-include Util.Logging(struct let label = "dose_common.url" end) ;;
+include Util.Logging (struct
+  let label = "dose_common.url"
+end)
 
 (***********************************************************************)
 (* Input schemes *******************************************************)
 
-type debtypes = [ `Edsp | `Deb | `DebSrc ]
-type rpmtypes = [ `Synthesis | `Hdlist ]
-type othertypes = [ `Csw | `Pef | `Opam | `Npm ]
+type debtypes = [`Edsp | `Deb | `DebSrc]
 
-type filetypes = [ `Cudf | debtypes | rpmtypes | othertypes ]
+type rpmtypes = [`Synthesis | `Hdlist]
+
+type othertypes = [`Csw | `Pef | `Opam | `Npm]
+
+type filetypes = [`Cudf | debtypes | rpmtypes | othertypes]
 
 let supported_input_types =
-  [`Edsp; `Deb ; `DebSrc ; `Synthesis ; `Hdlist ; `Pef ; `Opam ; `Csw ; `Cudf ; `Npm ]
-;;
+  [`Edsp; `Deb; `DebSrc; `Synthesis; `Hdlist; `Pef; `Opam; `Csw; `Cudf; `Npm]
 
 let scheme_to_string = function
-  | `Edsp -> "edsp"
-  | `Csw -> "csw"
-  | `Deb -> "deb"
-  | `DebSrc -> "debsrc"
-  | `Pef -> "pef"
-  | `Opam -> "opam"
-  | `Npm -> "npm"
-  | `Cudf -> "cudf"
-  | `Synthesis -> "synthesis"
-  | `Hdlist -> "hdlist"
-;;
+  | `Edsp ->
+      "edsp"
+  | `Csw ->
+      "csw"
+  | `Deb ->
+      "deb"
+  | `DebSrc ->
+      "debsrc"
+  | `Pef ->
+      "pef"
+  | `Opam ->
+      "opam"
+  | `Npm ->
+      "npm"
+  | `Cudf ->
+      "cudf"
+  | `Synthesis ->
+      "synthesis"
+  | `Hdlist ->
+      "hdlist"
 
 let scheme_of_string = function
-  | "edsp" -> `Edsp
-  | "csw" -> `Csw
-  | "deb" -> `Deb
-  | "opam" -> `Opam
-  | "npm" -> `Npm
-  | "debsrc" -> `DebSrc
-  | "cudf" -> `Cudf
-  | "eclipse" | "pef" -> `Pef
-  | "synthesis" -> `Synthesis
-  | "hdlist" -> `Hdlist
+  | "edsp" ->
+      `Edsp
+  | "csw" ->
+      `Csw
+  | "deb" ->
+      `Deb
+  | "opam" ->
+      `Opam
+  | "npm" ->
+      `Npm
+  | "debsrc" ->
+      `DebSrc
+  | "cudf" ->
+      `Cudf
+  | "eclipse" | "pef" ->
+      `Pef
+  | "synthesis" ->
+      `Synthesis
+  | "hdlist" ->
+      `Hdlist
   | s ->
-    let supported = String.concat ", " (List.map scheme_to_string supported_input_types) in
-    fatal "unknown input scheme: \"%s\" - Must be one of: %s" s supported
-;;
+      let supported =
+        String.concat ", " (List.map scheme_to_string supported_input_types)
+      in
+      fatal "unknown input scheme: \"%s\" - Must be one of: %s" s supported
 
 (***********************************************************************)
 (* URLs ****************************************************************)
 
-type url = {
-  scheme : filetypes;
-  path   : string;     (* filename *)
-};;
+type url = {scheme : filetypes; path : string (* filename *)}
 
-let to_string u = (scheme_to_string u.scheme)^"://"^u.path
-;;
+let to_string u = scheme_to_string u.scheme ^ "://" ^ u.path
 
 let of_string s =
   let l = String.length s in
@@ -75,13 +92,8 @@ let of_string s =
     try String.index s ':'
     with Not_found -> fatal "missing '://' separator %s" s
   in
-  if pos_colon+2 >= l
-    || String.get s (pos_colon+1) <> '/'
-    || String.get s (pos_colon+2) <> '/'
-  then fatal "missing '://' separator %s" s;
+  if pos_colon + 2 >= l || s.[pos_colon + 1] <> '/' || s.[pos_colon + 2] <> '/'
+  then fatal "missing '://' separator %s" s ;
   let scheme = scheme_of_string (String.sub s 0 pos_colon)
-  and start_rest = pos_colon+3 in
-  { scheme  = scheme;
-    path    = String.sub s start_rest (l-start_rest);
-  }
-;;
+  and start_rest = pos_colon + 3 in
+  {scheme; path = String.sub s start_rest (l - start_rest)}

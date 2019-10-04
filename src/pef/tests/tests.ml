@@ -10,7 +10,9 @@ and raises_failure function_to_test failure_text args () =
 
 let parse_pef_vpkgformula =
   let function_to_test par =
-    let f = Dose_pef.Packages.parse_s ~default:[] Dose_pef.Packages.parse_vpkgformula in
+    let f =
+      Dose_pef.Packages.parse_s ~default:[] Dose_pef.Packages.parse_vpkgformula
+    in
     Dose_pef.Packages.get_field_value ~parse:f ~par ~field:("Depends", None)
   in
   let returns = returns_result function_to_test in
@@ -47,9 +49,14 @@ let parse_pef_vpkgformula =
 let parse_pef_builddepsformula =
   let function_to_test par =
     let f =
-      Dose_pef.Packages.parse_s ~default:[] Dose_pef.Packages.parse_builddepsformula
+      Dose_pef.Packages.parse_s
+        ~default:[]
+        Dose_pef.Packages.parse_builddepsformula
     in
-    Dose_pef.Packages.get_field_value ~parse:f ~par ~field:("BuildDepends", None)
+    Dose_pef.Packages.get_field_value
+      ~parse:f
+      ~par
+      ~field:("BuildDepends", None)
   in
   let returns = returns_result function_to_test in
   (* let raises  = raises_failure function_to_test in *)
@@ -86,8 +93,13 @@ let parse_pef_builddepsformula =
 
 let parse_pef_archlist =
   let function_to_test par =
-    let f = Dose_pef.Packages.parse_s ~default:[] Dose_pef.Packages.parse_archlist in
-    Dose_pef.Packages.get_field_value ~parse:f ~par ~field:("Architectures", None)
+    let f =
+      Dose_pef.Packages.parse_s ~default:[] Dose_pef.Packages.parse_archlist
+    in
+    Dose_pef.Packages.get_field_value
+      ~parse:f
+      ~par
+      ~field:("Architectures", None)
   in
   let returns = returns_result function_to_test in
   (* let raises  = raises_failure function_to_test in *)

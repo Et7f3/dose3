@@ -32,6 +32,7 @@ exception File_empty
 val open_file : string -> IO.input
 
 val open_ch : in_channel -> IO.input
+
 val close_ch : IO.input -> unit
 
 (** parse a uri.
@@ -41,15 +42,23 @@ val close_ch : IO.input -> unit
       cudf://path/to/file
 
     @return a tuple representing the uri *)
-val parse_uri : string -> (
-  Url.filetypes *     (* format *)
-  (string option      (* username *)
-  * string option     (* password *)
-  * string option     (* hostname *)
-  * string option     (* port *)
-  * string )          (* db name - or filename *)
-  * string option     (* query string *)
-  )
+val parse_uri :
+  string ->
+  Url.filetypes
+  * (* format *)
+  ( string option
+  (* username *)
+  * string option
+  (* password *)
+  * string option
+  (* hostname *)
+  * string option
+  (* port *)
+  * string )
+  * (* db name - or filename *)
+  string option
+
+(* query string *)
 
 (** guess the input format from a list of list of uris and check
  *  if the list is omogenueous w.r.t the guessed format. Fails otherwise *)

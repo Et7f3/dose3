@@ -14,7 +14,9 @@ open ExtLib
 open Common
 module Boilerplate = BoilerplateNoRpm
 
-include Util.Logging (struct let label = "dudf-extract" end)
+include Util.Logging (struct
+  let label = "dudf-extract"
+end)
 
 module Deb = Debian.Packages
 module L = Xml.LazyList

@@ -13,7 +13,9 @@
 open ExtLib
 open Common
 
-include Util.Logging (struct let label = "deb-dudftocudf" end)
+include Util.Logging (struct
+  let label = "deb-dudftocudf"
+end)
 
 module Deb = Debian.Packages
 module L = Xml.LazyList

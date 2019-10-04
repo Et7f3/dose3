@@ -148,7 +148,7 @@ let version_test_cases =
     (* hierarchy of parts *)
       ("2:1.1-1.1", "2:1.1-1.2", -1);
       (* hierarchy of parts *)
-
+    
   ]
 
 let dpkg_compare x y =
@@ -581,7 +581,7 @@ let test_evolution =
       ) clusters
     );
 *)
-
+         
        ]
 
 let test_multiarch =
@@ -1367,7 +1367,9 @@ let test_sources2packages =
     src#depends
   in
   let returns =
-    returns_result ~printer:Dose_pef.Printer.string_of_vpkgformula function_to_test
+    returns_result
+      ~printer:Dose_pef.Printer.string_of_vpkgformula
+      function_to_test
   in
   [
     ( "any/native",
@@ -1455,7 +1457,9 @@ let test_versioned_provides =
     Dose_algo.Diagnostic.is_solution r
   in
   let printer r = if r then "unsat" else "sat" in
-  let pr_list = Util.string_of_list ~sep:", " Dose_pef.Printer.string_of_vpkg in
+  let pr_list =
+    Util.string_of_list ~sep:", " Dose_pef.Printer.string_of_vpkg
+  in
   let returns = returns_result ~printer function_to_test in
   let res =
     List.map

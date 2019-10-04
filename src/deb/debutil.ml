@@ -14,60 +14,70 @@ open ExtLib
 open Dose_common
 module Version = Dose_versioning.Debian
 
-
-
-include Util.Logging(struct let label = "dose_deb.debutil" end) ;;
+include Util.Logging (struct
+  let label = "dose_deb.debutil"
+end)
 
 let get_source pkg =
   match pkg#source with
-  |("",None) -> (pkg#name, pkg#version)
-  |(n,None) -> (n, pkg#version)
-  |(n,Some v) -> (n,v)
+  | ("", None) ->
+      (pkg#name, pkg#version)
+  | (n, None) ->
+      (n, pkg#version)
+  | (n, Some v) ->
+      (n, v)
 
-(** [group_by_source universe] returns a hashtbl that maps
-    (source,sourceversion) -> to a packages list *)
 (* the idea is : if the normalized version of the package is equal to
  * the source version, then add it to the table indexed by source version,
  * otherwise add it to the table indexed by package version *)
 (* actually it should be sourceversion -> list of list of clusters grouped by
  * version *)
 (* (source,sourceversion) -> [= packageversion -> (ref[pkg],realversion) =] *)
+
+(** [group_by_source universe] returns a hashtbl that maps
+    (source,sourceversion) -> to a packages list *)
 let cluster packagelist =
   let th = Hashtbl.create (List.length packagelist) in
-  List.iter (fun pkg ->
-    let packageversion = Version.compose (Version.strip_epoch_binnmu pkg#version) in
-    let realversion = Version.compose (Version.strip_epoch pkg#version) in
-    let (source, sourceversion) = get_source pkg in
-    try
-      let h = Hashtbl.find th (source,sourceversion) in
-      try let (l,hi_v) = Hashtbl.find h packageversion in
-      l := pkg :: !l;
-      let new_hi =
-        if (Version.compare hi_v realversion) < 0
-        then hi_v
-        else realversion
+  List.iter
+    (fun pkg ->
+      let packageversion =
+        Version.compose (Version.strip_epoch_binnmu pkg#version)
       in
-      (* keep the highest version of the cluster handy *)
-      Hashtbl.replace h packageversion (l,new_hi)
+      let realversion = Version.compose (Version.strip_epoch pkg#version) in
+      let (source, sourceversion) = get_source pkg in
+      try
+        let h = Hashtbl.find th (source, sourceversion) in
+        try
+          let (l, hi_v) = Hashtbl.find h packageversion in
+          l := pkg :: !l ;
+          let new_hi =
+            if Version.compare hi_v realversion < 0 then hi_v else realversion
+          in
+          (* keep the highest version of the cluster handy *)
+          Hashtbl.replace h packageversion (l, new_hi)
+        with Not_found ->
+          (* found the source, but not the package version *)
+          Hashtbl.add h packageversion (ref [pkg], realversion)
       with Not_found ->
-        (* found the source, but not the package version *)
-        Hashtbl.add h packageversion (ref[pkg],realversion)
-    with Not_found -> begin
-      (* didn't found the source *)
-      let h = Hashtbl.create 17 in
-      Hashtbl.add h packageversion (ref[pkg],realversion);
-      Hashtbl.add th (source,sourceversion) h
-    end
-  ) packagelist ;
+        (* didn't found the source *)
+        let h = Hashtbl.create 17 in
+        Hashtbl.add h packageversion (ref [pkg], realversion) ;
+        Hashtbl.add th (source, sourceversion) h)
+    packagelist ;
   let h = Hashtbl.create (List.length packagelist) in
   let i = ref 0 in
-  Hashtbl.iter (fun (s,v) thv ->
-    let l = Hashtbl.fold (fun v ({contents=l},rv) acc -> (v,rv,l)::acc) thv [] in
-    i := !i + (List.length l);
-    Hashtbl.add h (s,v) l
-  ) th;
-  info "Packages: %d" (List.length packagelist);
-  info "Source Clusters: %d" (Hashtbl.length h);
-  info "Binary (effective) Clusters: %d" !i;
+  Hashtbl.iter
+    (fun (s, v) thv ->
+      let l =
+        Hashtbl.fold
+          (fun v ({contents = l}, rv) acc -> (v, rv, l) :: acc)
+          thv
+          []
+      in
+      i := !i + List.length l ;
+      Hashtbl.add h (s, v) l)
+    th ;
+  info "Packages: %d" (List.length packagelist) ;
+  info "Source Clusters: %d" (Hashtbl.length h) ;
+  info "Binary (effective) Clusters: %d" !i ;
   h
-;;

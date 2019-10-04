@@ -15,36 +15,32 @@
 open ExtLib
 open Dose_common
 
-include Util.Logging(struct let label = "doseparse.stdDebug" end)
+include Util.Logging (struct
+  let label = "doseparse.stdDebug"
+end)
 
 let enable_debug = function
-  |0 -> () (* only warning messages : default *)
-  |1 -> Util.Info.all_enabled ()
-  |2 ->
-      begin
-        Util.Info.all_enabled ();
-        Util.Notice.all_enabled ()
-      end
-  |_ ->
-      begin
-        Util.Info.all_enabled () ;
-        Util.Notice.all_enabled ();
-        Util.Debug.all_enabled ()
-      end
+  | 0 ->
+      () (* only warning messages : default *)
+  | 1 ->
+      Util.Info.all_enabled ()
+  | 2 ->
+      Util.Info.all_enabled () ; Util.Notice.all_enabled ()
+  | _ ->
+      Util.Info.all_enabled () ;
+      Util.Notice.all_enabled () ;
+      Util.Debug.all_enabled ()
 
 let all_quiet t =
-  if t then begin
-    Util.Info.all_disabled ();
-    Util.Notice.all_disabled ();
-    Util.Warning.all_disabled ();
-    Util.Debug.all_disabled ();
-    List.iter Util.Progress.disable (Util.Progress.available ())
-  end
+  if t then (
+    Util.Info.all_disabled () ;
+    Util.Notice.all_disabled () ;
+    Util.Warning.all_disabled () ;
+    Util.Debug.all_disabled () ;
+    List.iter Util.Progress.disable (Util.Progress.available ()) )
 
-let enable_bars verbose l =
-  if verbose then List.iter Util.Progress.enable l
+let enable_bars verbose l = if verbose then List.iter Util.Progress.enable l
 
 let enable_timers verbose l =
-  at_exit (Util.Timer.dump Format.err_formatter);
+  at_exit (Util.Timer.dump Format.err_formatter) ;
   if verbose then List.iter Util.Timer.enable l
-

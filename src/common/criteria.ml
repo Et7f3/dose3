@@ -12,15 +12,15 @@
 
 open ExtLib
 open Criteria_types
-
 module Pcre = Re_pcre
 
-
-
-include Util.Logging(struct let label = "dose_common.criteria" end) ;;
+include Util.Logging (struct
+  let label = "dose_common.criteria"
+end)
 
 let lexbuf_wrapper type_parser v =
   Format822.lexbuf_wrapper type_parser Criteria_lexer.token v
+
 let parse_criteria v = lexbuf_wrapper Criteria_parser.criteria_top v
 
 (* Cudf field names are much more restrictive than deb822 field names which
@@ -49,10 +49,10 @@ let invalidchars = Pcre.regexp "[^0-9a-z-]"
   Get the first eight hex digits of the md5sum of the fieldname, the match
   type and the search string.
 *)
-let makefield ?(sep="=") fieldname regex =
+let makefield ?(sep = "=") fieldname regex =
   let regexhash =
-    let s = fieldname^sep^regex in
-    String.sub (Digest.to_hex (Digest.string s)) 0 8 
+    let s = fieldname ^ sep ^ regex in
+    String.sub (Digest.to_hex (Digest.string s)) 0 8
   in
   let sanitize s =
     let s = String.lowercase s in
@@ -61,76 +61,91 @@ let makefield ?(sep="=") fieldname regex =
   Printf.sprintf "x-%s-%s" (sanitize fieldname) regexhash
 
 let is_misc2012 = function
-  |"mccs-cbc" | "mccs-lpsolve" -> false
-  |"aspcud" | "packup" -> true
-  | _ -> true (* we assume true by default *)
+  | "mccs-cbc" | "mccs-lpsolve" ->
+      false
+  | "aspcud" | "packup" ->
+      true
+  | _ ->
+      true
 
-let to_string ?(solver="dumb") criteria =
+(* we assume true by default *)
+
+let to_string ?(solver = "dumb") criteria =
   let pr = Printf.sprintf in
   let string_of_set = function
-    | Solution -> "solution"
-    | Changed -> "changed"
-    | New -> "new"
-    | Removed -> "removed"
-    | Up -> "up"
-    | Down -> "down"
+    | Solution ->
+        "solution"
+    | Changed ->
+        "changed"
+    | New ->
+        "new"
+    | Removed ->
+        "removed"
+    | Up ->
+        "up"
+    | Down ->
+        "down"
   in
   if is_misc2012 solver then
     let l =
-      List.map (fun pred ->
-        let pred, crit =
-          match pred with
-          | Maximize s -> "+", s
-          | Minimize s -> "-", s
-        in
-        let critstr =
-          match crit with
-          | Count (set, None) ->
-              pr "count(%s)" (string_of_set set)
-          | Count (set, Some (field, r)) ->
-            let sep, r = match r with ExactMatch r -> ("=", r) | Regexp r -> ("~", r) in
-            pr "sum(%s,%s)" (string_of_set set) (makefield ~sep field r)
-          | Sum (set, attr) ->
-              pr "sum(%s,%s)" (string_of_set set) attr
-          | Unsatrec set -> pr "unsat_recommends(%s)" (string_of_set set)
-          | Aligned (set, attr1, attr2) ->
-              pr "aligned(%s,%s,%s)" (string_of_set set) attr1 attr2
-          | NotUptodate set ->
-              pr "notuptodate(%s)" (string_of_set set)
-        in
-        pred ^ critstr
-      ) criteria
+      List.map
+        (fun pred ->
+          let (pred, crit) =
+            match pred with Maximize s -> ("+", s) | Minimize s -> ("-", s)
+          in
+          let critstr =
+            match crit with
+            | Count (set, None) ->
+                pr "count(%s)" (string_of_set set)
+            | Count (set, Some (field, r)) ->
+                let (sep, r) =
+                  match r with ExactMatch r -> ("=", r) | Regexp r -> ("~", r)
+                in
+                pr "sum(%s,%s)" (string_of_set set) (makefield ~sep field r)
+            | Sum (set, attr) ->
+                pr "sum(%s,%s)" (string_of_set set) attr
+            | Unsatrec set ->
+                pr "unsat_recommends(%s)" (string_of_set set)
+            | Aligned (set, attr1, attr2) ->
+                pr "aligned(%s,%s,%s)" (string_of_set set) attr1 attr2
+            | NotUptodate set ->
+                pr "notuptodate(%s)" (string_of_set set)
+          in
+          pred ^ critstr)
+        criteria
     in
     String.concat "," l
-  else
-    fatal "Solver Specific Optimizations (%s) are not recognized." solver
+  else fatal "Solver Specific Optimizations (%s) are not recognized." solver
 
 (* compile the regex so that this doesn't need to be done later *)
 (* TODO: the regex should probably be multiline? *)
 let iter f =
   List.iter (function
-    | Minimize (Count(_,Some(fieldname,regex))) 
-    | Maximize (Count(_,Some(fieldname,regex))) ->
-      let regexstring, sep, compiled_re = match regex with
-        | Regexp r -> (r, "~", Some(Pcre.regexp r))
-        | ExactMatch r -> (r, "=", None)
-      in
-      let cudffieldname = makefield ~sep fieldname regexstring in
-      f (cudffieldname,fieldname,regexstring,compiled_re)
-    | _ -> ()
-  )
+      | Minimize (Count (_, Some (fieldname, regex)))
+      | Maximize (Count (_, Some (fieldname, regex))) ->
+          let (regexstring, sep, compiled_re) =
+            match regex with
+            | Regexp r ->
+                (r, "~", Some (Pcre.regexp r))
+            | ExactMatch r ->
+                (r, "=", None)
+          in
+          let cudffieldname = makefield ~sep fieldname regexstring in
+          f (cudffieldname, fieldname, regexstring, compiled_re)
+      | _ ->
+          ())
 
-let default_criteria = 
-  let minnew = Minimize(Count(New,None)) in
-  let minrem = Minimize(Count(Removed,None)) in
-  let minupto = Minimize(NotUptodate(Solution)) in
-  let minch = Minimize(Count(Changed,None)) in
-  let minunsat = Minimize(Unsatrec(Solution)) in
+let default_criteria =
+  let minnew = Minimize (Count (New, None)) in
+  let minrem = Minimize (Count (Removed, None)) in
+  let minupto = Minimize (NotUptodate Solution) in
+  let minch = Minimize (Count (Changed, None)) in
+  let minunsat = Minimize (Unsatrec Solution) in
   [
-  "upgrade", [minnew;minrem;minupto];
-  "dist-upgrade", [minupto;minnew];
-  "install", [minrem;minch];
-  "remove", [minrem;minch];
-  "paranoid", [minrem;minch];
-  "trendy", [minrem;minupto;minunsat;minnew];
-]
+    ("upgrade", [minnew; minrem; minupto]);
+    ("dist-upgrade", [minupto; minnew]);
+    ("install", [minrem; minch]);
+    ("remove", [minrem; minch]);
+    ("paranoid", [minrem; minch]);
+    ("trendy", [minrem; minupto; minunsat; minnew]);
+  ]

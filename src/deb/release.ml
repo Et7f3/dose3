@@ -19,53 +19,110 @@
 
 open Dose_common
 
-
-
-include Util.Logging(struct let label = "dose_deb.release" end) ;;
+include Util.Logging (struct
+  let label = "dose_deb.release"
+end)
 
 type release = {
   fname : string;
   origin : string;
   label : string;
   suite : string;
-  version: string;
+  version : string;
   codename : string;
-  date: string;
-  architecture: string;
+  date : string;
+  architecture : string;
   component : string;
-  notauto: bool;
-  autoup: bool;
-  description: string;
-  md5sums: (string * string * string) list;
-  sha1: (string * string * string) list;
-  sha256: (string * string * string) list
+  notauto : bool;
+  autoup : bool;
+  description : string;
+  md5sums : (string * string * string) list;
+  sha1 : (string * string * string) list;
+  sha256 : (string * string * string) list;
 }
 
-let parse_release_stanza fname par = {
-  fname = Filename.basename (fname);
-  origin = Dose_pef.Packages.parse_s ~default:"" Dose_pef.Packages.parse_string "Origin" par;
-  label = Dose_pef.Packages.parse_s ~default:"" Dose_pef.Packages.parse_string "Label" par;
-  suite = Dose_pef.Packages.parse_s ~default:"" Dose_pef.Packages.parse_string "Suite" par;
-  version = Dose_pef.Packages.parse_s ~default:"" Dose_pef.Packages.parse_string "Version" par;
-  codename = Dose_pef.Packages.parse_s ~default:"" Dose_pef.Packages.parse_string "Codename" par;
-  date = Dose_pef.Packages.parse_s ~default:"" Dose_pef.Packages.parse_string "Date" par;
-  architecture = Dose_pef.Packages.parse_s ~default:"" Dose_pef.Packages.parse_string "Architectures" par;
-  component = Dose_pef.Packages.parse_s ~default:"" Dose_pef.Packages.parse_string "Components" par;
-  notauto = Dose_pef.Packages.parse_s ~default:false Dose_pef.Packages.parse_bool "NotAutomatic" par;
-  autoup = Dose_pef.Packages.parse_s ~default:false Dose_pef.Packages.parse_bool "ButAutomaticUpgrades" par;
-  description = Dose_pef.Packages.parse_s ~default:"" Dose_pef.Packages.parse_string "Description" par;
-  md5sums = [];
-  sha1 = [];
-  sha256 = []
-}
+let parse_release_stanza fname par =
+  {
+    fname = Filename.basename fname;
+    origin =
+      Dose_pef.Packages.parse_s
+        ~default:""
+        Dose_pef.Packages.parse_string
+        "Origin"
+        par;
+    label =
+      Dose_pef.Packages.parse_s
+        ~default:""
+        Dose_pef.Packages.parse_string
+        "Label"
+        par;
+    suite =
+      Dose_pef.Packages.parse_s
+        ~default:""
+        Dose_pef.Packages.parse_string
+        "Suite"
+        par;
+    version =
+      Dose_pef.Packages.parse_s
+        ~default:""
+        Dose_pef.Packages.parse_string
+        "Version"
+        par;
+    codename =
+      Dose_pef.Packages.parse_s
+        ~default:""
+        Dose_pef.Packages.parse_string
+        "Codename"
+        par;
+    date =
+      Dose_pef.Packages.parse_s
+        ~default:""
+        Dose_pef.Packages.parse_string
+        "Date"
+        par;
+    architecture =
+      Dose_pef.Packages.parse_s
+        ~default:""
+        Dose_pef.Packages.parse_string
+        "Architectures"
+        par;
+    component =
+      Dose_pef.Packages.parse_s
+        ~default:""
+        Dose_pef.Packages.parse_string
+        "Components"
+        par;
+    notauto =
+      Dose_pef.Packages.parse_s
+        ~default:false
+        Dose_pef.Packages.parse_bool
+        "NotAutomatic"
+        par;
+    autoup =
+      Dose_pef.Packages.parse_s
+        ~default:false
+        Dose_pef.Packages.parse_bool
+        "ButAutomaticUpgrades"
+        par;
+    description =
+      Dose_pef.Packages.parse_s
+        ~default:""
+        Dose_pef.Packages.parse_string
+        "Description"
+        par;
+    md5sums = [];
+    sha1 = [];
+    sha256 = [];
+  }
 
 let release_parser stanza_parser fname p =
   match
-  Format822_parser.doc_822_sign
-    Format822_lexer.token_822 p.Format822.lexbuf
+    Format822_parser.doc_822_sign Format822_lexer.token_822 p.Format822.lexbuf
   with
-  |Some st -> Some (stanza_parser fname st)
-  |None -> None
+  | Some st ->
+      Some (stanza_parser fname st)
+  | None ->
+      None
 
 let parse_release_in fname ic =
   Format822.parse_from_ch (release_parser parse_release_stanza fname) ic

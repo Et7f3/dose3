@@ -21,46 +21,46 @@ open Doseparse
 
 module Options = struct
   open OptParse
+
   let options = OptParser.make ~description:"add a decription here"
-  include StdOptions.MakeOptions(struct let options = options end)
 
-  let fail = StdOpt.store_true () 
+  include StdOptions.MakeOptions (struct
+    let options = options
+  end)
 
-  open OptParser ;;
-  add options ~short_name:'f' ~long_name:"fail" ~help:"exit with a failoure" fail;
+  let fail = StdOpt.store_true ()
 
+  open OptParser
+
+  ;;
+  add
+    options
+    ~short_name:'f'
+    ~long_name:"fail"
+    ~help:"exit with a failoure"
+    fail
 end
 
-
-
-include Util.Logging(struct let label = "dose_experimental.example" end) ;;
+include Util.Logging (struct
+  let label = "dose_experimental.example"
+end)
 
 let main () =
-
   let args = OptParse.OptParser.parse_argv Options.options in
-  
   (* enable info / warning / debug information *)
-  StdDebug.enable_debug (OptParse.Opt.get Options.verbose);
-  
+  StdDebug.enable_debug (OptParse.Opt.get Options.verbose) ;
   (* enable a selection of progress bars *)
   StdDebug.enable_bars (OptParse.Opt.get Options.progress) [] ;
-
   (* enable a selection of timers *)
-  StdDebug.enable_timers (OptParse.Opt.get Options.timers) [];
-  StdDebug.all_quiet (OptParse.Opt.get Options.quiet);
+  StdDebug.enable_timers (OptParse.Opt.get Options.timers) [] ;
+  StdDebug.all_quiet (OptParse.Opt.get Options.quiet) ;
+  info "print some verbose info" ;
+  warning "print some warnings" ;
+  debug "print some debug" ;
+  List.iter (Printf.printf "Arg : %s\n") args ;
+  if OptParse.Opt.get Options.fail then fatal "this is a fatal error"
 
-  info "print some verbose info";
-  warning "print some warnings";
-  debug "print some debug";
-  
-  List.iter (Printf.printf "Arg : %s\n") args;
-  
-  if OptParse.Opt.get Options.fail then
-    fatal "this is a fatal error"
-  ;
+(* add here the rest *)
 
-  (* add here the rest *)
 ;;
-
-main ();;
-
+main ()
