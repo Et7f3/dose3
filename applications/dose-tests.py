@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import unittest
 from subprocess import Popen, PIPE
@@ -6,7 +6,7 @@ import difflib
 import uuid
 import os,sys,time,glob
 import argparse
-from itertools import groupby, ifilter
+from itertools import groupby
 import yaml
 import copy
 
@@ -17,8 +17,7 @@ except ImportError:
     warning('YAML C-library not available, falling back to python')
 
 import filecmp
-import cStringIO
-from sets import Set
+import io
 
 def which(program):
     path = "/usr/share/cudf/solvers/"
@@ -53,23 +52,23 @@ class Ignore(Exception):
 def convert(d) :
     def aux(e) :
         if isinstance(e, dict) :
-            return frozenset(sorted([(k,aux(v)) for (k,v) in e.items()]))
+            return frozenset(sorted([(k,aux(v)) for (k,v) in list(e.items())]))
         elif isinstance(e, list) :
             return frozenset(sorted([aux(v) for v in e]))
         else :
             return e
     return sorted([aux(e) for e in d])
 
-def parse822(f,filter) :
+def parse822(f,filterfun) :
     records = []
-    for empty, record in groupby(ifilter(lambda s: not s.startswith('#'),open(f)), key=str.isspace):
+    for empty, record in groupby(filter(lambda s: not s.startswith('#'),open(f)), key=str.isspace):
         if not empty:
-            l = map(lambda s : tuple(s.split(': ')), record)
-            l = map(lambda (k,v) : (k,v.rstrip()), l)
+            l = [tuple(s.split(': ')) for s in record]
+            l = [(k_v[0],k_v[1].rstrip()) for k_v in l]
             if (len(l) > 0):
                 try :
-                    pairs = ((k, filter((k,v.strip()))) for k,v in l)
-                    records.append((pairs))
+                    pairs = ((k, filterfun((k,v.strip()))) for k,v in l)
+                    records.append(pairs)
                 except Ignore :
                     continue
 
@@ -79,11 +78,11 @@ def parse822(f,filter) :
 def parseedsp(f):
     fields = ['Package','Architecture']
 
-    def filter(k,s,fields) :
+    def filterfun(k,s,fields) :
         if k in fields :
             return s
 
-    return parse822(f,filter)
+    return parse822(f,filterfun)
 
 def parsedistcheck(f) :
     cnf_fields = ['conflict','depends','provides','recommends']
@@ -92,15 +91,15 @@ def parsedistcheck(f) :
         if k == "preamble" : raise Ignore
         if k in cnf_fields :
             l = s.split(',')
-            ll = map(lambda s : s.split('|'), l)
+            ll = [s.split('|') for s in l]
             return ll
         else :
             return s
 
-    return parse822(f,filter)
+    return parse822(f,filterfun)
 
 def parseyaml(f) :
-    print "yaml %s" % f
+    print("yaml %s" % f)
     l = []
     if os.path.getsize(f) > 0 :
         data = yaml.load(open(f), Loader=yamlLoader)
@@ -120,8 +119,8 @@ def diff_aux(expectedfile,resultfile,parser):
         result = parser(resultfile)
         matcher = difflib.SequenceMatcher(None, expected, result)
         if matcher.ratio() == 1.0 :
-            print "Warning ! Expected result and actual result are not identical."
-            print "The order is not the same."
+            print("Warning ! Expected result and actual result are not identical.")
+            print("The order is not the same.")
             return True
         else :
             if False :
@@ -156,7 +155,7 @@ def test_application(self,expected_file,cmd,diff,exitcode):
     if rc == exitcode :
         ec = True
     else :
-        print "ExitCode = %d" % rc
+        print("ExitCode = %d" % rc)
         ec = False
     d = diff(expected_file,output_file)
     output.close()
@@ -206,8 +205,8 @@ class DoseTests(unittest.TestCase):
 
 def suite(f,runtest,rungroup,slow=False):
     suite = unittest.TestSuite()
-    groups = Set()
-    tests = Set()
+    groups = set()
+    tests = set()
     groupFound=False
     testFound=False
     def addtest(s) :
@@ -244,11 +243,11 @@ def suite(f,runtest,rungroup,slow=False):
             groupFound=True
             addtest(s)
     if len(runtest) != 0 and testFound == False :
-        print "Test(s) [%s] Not found" % (','.join(str(p) for p in runtest)) 
-        print "Tests available [%s]" % (','.join(str(p) for p in tests))
+        print("Test(s) [%s] Not found" % (','.join(str(p) for p in runtest))) 
+        print("Tests available [%s]" % (','.join(str(p) for p in tests)))
     if len(rungroup) != 0 and groupFound == False :
-        print "Group(s) [%s] Not found" % (','.join(str(p) for p in rungroup))
-        print "Groups available [%s]" % (','.join(str(p) for p in groups))
+        print("Group(s) [%s] Not found" % (','.join(str(p) for p in rungroup)))
+        print("Groups available [%s]" % (','.join(str(p) for p in groups)))
 
     return suite
 
@@ -275,7 +274,7 @@ def main():
             if args.fixtest[0] == s['Name'] :
                 cmd = s['Cmd'].split(' ') + s['Input'].split(' ')
                 expected = s['Expected']
-                print "Overwriting expected file: %s" % expected
+                print("Overwriting expected file: %s" % expected)
                 fixtest(expected,cmd)
     else :
         unittest.TextTestRunner(verbosity=2).run(suite(args.inputfile[0],args.runtest,args.rungroup,args.slow))
