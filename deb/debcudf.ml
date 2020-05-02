@@ -484,47 +484,66 @@ let tocudf tables ?(options=default_options) ?(inst=false) pkg =
             sc :: masc 
       in
       let multiarchconflicts =
-        let selfconflict = function
-	  | ((n,a),None) -> (n = pkg#name) || List.exists (fun ((p,_),_) -> p=n) pkg#provides 
-	  | ((n,a),_)    -> (n = pkg#name)
-	in
-        let realpackage = Util.StringHashtbl.mem tables.unit_table in
         match pkg#multiarch with
         |(`No|`Foreign|`Allowed) -> 
             bind (native_arch::options.foreign) (fun arch ->
                 loadl ~native_arch ~package_arch:arch tables originalconflicts
               )
         |`Same -> 
+            (* XXX: This code does not correctly handle versioned provides, nor
+             * versioned constraints. *)
+            let selfconflict = function
+              | ((n,a),None) -> (n = pkg#name) || List.exists (fun ((p,_),_) -> p=n) pkg#provides
+              | ((n,a),_)    -> (n = pkg#name)
+            in
+            let realpackage = Util.StringHashtbl.mem tables.unit_table in
             (* XXX : Duplicated conflicts ! *)
             bind (native_arch::options.foreign) (fun arch ->
-              let l =
-                bind originalconflicts (fun ((n,a),c) ->
-                  (*
-                  debug "M-A-Same: examining pkg %s, conflicting with package %s (self confl = %b)" pkg.name n (selfconflict ((n,a),c));
-                  *)
-                  match realpackage n, selfconflict ((n,a),c) with
-                  |true,false  -> [((n,a),c)]  (* real conflict *)
-                  |true, true  -> []           (* self conflict on real package, drop it *)
-                  |false,false ->
-                      begin match c with 
-                      |None -> [((n,a),None)] (* virtual conflict *)
-                      |_ -> []                (* real conflict on non-existent package, drop it *)
-                      end
-                  |false, true ->             (* a virtual package and a self conflict *)
-                      begin
-                        (*debug "M-A-Same: pkg %s has a self-conflict via virtual package: %s" pkg#name n;*)
-                        try
-                          List.filter_map (fun (pn,_) ->
-                            if pn <> pkg#name then begin
-                              (*debug "M-A-Same: adding conflict on real package %s for %s" pn pkg#name; *)
-                              Some((pn,a),None)
-                            end else None
-                          ) (SSet.elements !(OcamlHashtbl.find tables.virtual_table n))
-                        with Not_found -> []
-                      end
-                )
-              in
-              loadl ~native_arch ~package_arch:arch tables l
+              bind originalconflicts (fun ((n,a),c) ->
+                (*
+                debug "M-A-Same: examining pkg %s, conflicting with package %s (self confl = %b)" pkg.name n (selfconflict ((n,a),c));
+                *)
+                match selfconflict ((n,a),c) with
+                | false ->
+                    let l = match realpackage n, c with
+                    | false, Some(_) -> [] (* real conflict on non-existent package, drop it *)
+                    | _ -> [((n,a),c)]     (* real conflict or virtual conflict *)
+                    in loadl ~native_arch ~package_arch:arch tables l
+                | true ->                  (* self conflict *)
+                    (* We have a Multi-Arch: Same package A whose Conflicts
+                     * matches itself, either the real package or a virtual
+                     * provides. For non-virtual packages, things are easy, we
+                     * can just drop the Conflicts, since self-conflicts are
+                     * supposed to be ignored, and this avoids the nastiness
+                     * that's to follow.
+                     *
+                     * However, if Conflicts is a virtual package (regardless
+                     * of whether it is also a real package), we need to be
+                     * very careful. We want to conflict with every other
+                     * provider of that virtual package, but not ourselves, not
+                     * even other architectures, which means we cannot conflict
+                     * with --virtual-foo:arch (cudf will allow A:arch1 to
+                     * conflict with A:arch1, but not A:arch2).  Thus we must
+                     * expand out any self-conflicting virtual Conflicts to the
+                     * real packages providing them, with extra care taken in
+                     * case the package name is both real and virtual (we would
+                     * otherwise get the desired foo:arch with an undesired
+                     * --virtual-foo:arch, the very thing we are trying to get
+                     * rid of!). Thus we make sure to call add_arch_info
+                     * manually here rather than loadl on the whole result in
+                     * order to bypass the virtual_table check. *)
+                    (*debug "M-A-Same: pkg %s has a self-conflict via package: %s" pkg#name n;*)
+                    try
+                      List.filter_map (fun (pn,_) ->
+                        if pn <> pkg#name then begin
+                          (*debug "M-A-Same: adding conflict on real package %s for %s" pn pkg#name; *)
+                          let encname = add_arch_info ~native_arch ~package_arch:arch (pn,a) in
+                          Some(encname, None)
+                        end else None
+                      ) ((if realpackage n then [(n,c)] else []) @
+                         (SSet.elements !(OcamlHashtbl.find tables.virtual_table n)))
+                    with Not_found -> [] (* self conflict without virtual package *)
+              )
             )
       in
       multiarchconflicts @ multiarchconstraints

@@ -552,6 +552,141 @@ let test_conflicts =
     );
   ]
 
+let test_conflicts_multi_arch_same_input = "
+Package: libfoo
+Version: 1.0-1
+Architecture: amd64
+Multi-Arch: same
+Conflicts: libfoo
+
+Package: libfakefoo
+Version: 1.0-1
+Architecture: amd64
+Multi-Arch: same
+Provides: libfoo
+Conflicts: libfoo
+
+Package: libbar
+Version: 1.0-1
+Architecture: amd64
+Multi-Arch: same
+Conflicts: libfoo
+
+Package: baz1
+Version: 1.0-1
+Architecture: amd64
+Multi-Arch: same
+Provides: baz
+Conflicts: baz
+
+Package: baz2
+Version: 1.0-1
+Architecture: amd64
+Multi-Arch: same
+Provides: baz
+Conflicts: baz
+
+Package: libfoo
+Version: 1.0-1
+Architecture: i386
+Multi-Arch: same
+Conflicts: libfoo
+
+Package: libfakefoo
+Version: 1.0-1
+Architecture: i386
+Multi-Arch: same
+Provides: libfoo
+Conflicts: libfoo
+
+Package: libbar
+Version: 1.0-1
+Architecture: i386
+Multi-Arch: same
+Conflicts: libfoo
+
+Package: baz1
+Version: 1.0-1
+Architecture: i386
+Multi-Arch: same
+Provides: baz
+Conflicts: baz
+
+Package: baz2
+Version: 1.0-1
+Architecture: i386
+Multi-Arch: same
+Provides: baz
+Conflicts: baz
+"
+;;
+
+let test_conflicts_multi_arch_same =
+  let data = IO.input_string test_conflicts_multi_arch_same_input in
+  let packagelist = Packages.parse_packages_in "" data in
+  let tables = Debcudf.init_tables packagelist in
+  let options = {options with Debcudf.native = Some "amd64"; Debcudf.foreign = ["i386"] } in
+  let cudf_list = List.map (Debcudf.tocudf tables ~options) packagelist in
+  let universe = Cudf.load_universe cudf_list in
+  "test conflicts with Multi-Arch: same" >::: [
+    "self conflict and others provide self" >:: (fun _ ->
+      try
+        let v = Debcudf.get_cudf_version tables ("libfoo","1.0-1") in
+        let libfoo = Cudf.lookup_package universe ("libfoo%3aamd64",v) in
+        (* Expand out the real+virtual self-conflict to pick up all libfakefoo's *)
+        assert_equal libfoo.Cudf.conflicts [
+          ("libfakefoo%3aamd64", None);
+          ("libfakefoo%3ai386", None);
+          ("libfoo%3aamd64", None);
+          ("libfoo%3ai386", Some(`Neq, 2))
+        ]
+      with Not_found -> assert_failure "libfoo version mismatch"
+    );
+    "self conflict via provided real package" >:: (fun _ ->
+      try
+        let v = Debcudf.get_cudf_version tables ("libfakefoo","1.0-1") in
+        let libfakefoo = Cudf.lookup_package universe ("libfakefoo%3aamd64",v) in
+        (* Expand out the virtual self-conflict to pick up all libfakefoo's,
+         * but be sure to not keep the --virtual-libfoo conflicts around
+         * despite not being the libfoo package. *)
+        assert_equal libfakefoo.Cudf.conflicts [
+          ("libfoo%3aamd64", None);
+          ("libfoo%3ai386", None);
+          ("libfakefoo%3aamd64", None);
+          ("libfakefoo%3ai386", Some(`Neq, 2))
+        ]
+      with Not_found -> assert_failure "libfakefoo version mismatch"
+    );
+    "conflict with real and virtual package" >:: (fun _ ->
+      try
+        let v = Debcudf.get_cudf_version tables ("libbar","1.0-1") in
+        let libbar = Cudf.lookup_package universe ("libbar%3aamd64",v) in
+        (* Generate the real+virtual conflicts (no expansion as not a self-conflict) *)
+        assert_equal libbar.Cudf.conflicts [
+          ("libfoo%3aamd64", None);
+          ("--virtual-libfoo%3aamd64", None);
+          ("libfoo%3ai386", None);
+          ("--virtual-libfoo%3ai386", None);
+          ("libbar%3aamd64", None);
+          ("libbar%3ai386", Some(`Neq, 2))
+        ]
+      with Not_found -> assert_failure "libbar version mismatch"
+    );
+    "conflict with virtual package" >:: (fun _ ->
+      try
+        let v = Debcudf.get_cudf_version tables ("baz1","1.0-1") in
+        let baz1 = Cudf.lookup_package universe ("baz1%3aamd64",v) in
+        (* Expand out the virtual self-conflict to pick up both providers *)
+        assert_equal baz1.Cudf.conflicts [
+          ("baz2%3aamd64", None);
+          ("baz2%3ai386", None);
+          ("baz1%3aamd64", None);
+          ("baz1%3ai386", Some(`Neq, 2))
+        ]
+      with Not_found -> assert_failure "baz1 version mismatch"
+    );
+  ]
+
 let test_mapping =
   "test deb -> cudf mapping" >::: [
 (*    test_numbering ; *)
@@ -1101,6 +1236,7 @@ let all =
     "test versioned provides" >::: make_test_cases test_versioned_provides;
     test_mapping ;
     test_conflicts;
+    test_conflicts_multi_arch_same;
     "test real name" >::: make_test_cases test_realname;
     test_version;
     test_cluster;
