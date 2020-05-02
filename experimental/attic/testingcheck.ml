@@ -179,7 +179,7 @@ let main () =
 
   ;
 
-  Pervasives.at_exit (fun () -> 
+  Stdlib.at_exit (fun () -> 
     (try Unix.unlink cmdfile with Unix.Unix_error _ -> ());
     (try Unix.unlink inputfile with Unix.Unix_error _ -> ());
     Util.dump Format.err_formatter

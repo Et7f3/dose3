@@ -305,7 +305,7 @@ let cmp_ne x y =
         else c
   in
   let cmp (n1,sl1,pl1) (n2,sl2,pl2) =
-    let c = Pervasives.compare n1 n2 in
+    let c = Stdlib.compare n1 n2 in
     if c = 0 then
       let c1 = cmplist sl1 sl2 in
       if c1 = 0 then cmplist pl1 pl2
@@ -506,7 +506,7 @@ let print_error ?(condense=false) ?(minimal=false) pp root fmt l =
       type t = int
       type edge = G.E.t
       let weight e = match G.E.label e with { contents = PkgE.Conflict _ } -> 1000 | _ -> 0
-      let compare = Pervasives.compare
+      let compare = Stdlib.compare
       let add = (+)
       let zero = 0
     end) 

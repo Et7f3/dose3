@@ -87,20 +87,20 @@ module MakeMessages(X : sig val label : string end) = struct
   let clean label =
     try 
       let s = Filename.chop_extension (Filename.basename label) in
-      String.capitalize s
+      Stdlib.String.capitalize_ascii s
     with Invalid_argument _ -> label
 
   let create ?(enabled=false) label =
     if label = "" then begin
       Printf.eprintf "Logging Label Empty\n";
-      Pervasives.exit (64);
+      Stdlib.exit (64);
     end else if not (Hashtbl.mem messages label) then
       let t = { label = clean label ; enabled = enabled } in
       Hashtbl.add messages (clean label) t ;
       t
     else begin
       Printf.eprintf "The label (%s) %s already exists\n" X.label label;
-      Pervasives.exit (64);
+      Stdlib.exit (64);
     end
 
   let eprintf ?(raw=false) t fmt =
@@ -160,7 +160,7 @@ module Logging(X : sig val label : string end) = struct
     let l = Printf.sprintf "Fatal error in module %s: " X.label in
     Printf.kprintf (fun s ->
       Printf.eprintf "%s\n %s\n%!" l s; 
-      Pervasives.exit (64)
+      Stdlib.exit (64)
     ) fmt
 end
 

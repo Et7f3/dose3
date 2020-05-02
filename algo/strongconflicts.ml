@@ -24,7 +24,7 @@ type cfl_type = Explicit | Conjunctive | Other of Diagnostic.reason list
 
 module CflE = struct
   type t = Cudf.package * Cudf.package * cfl_type
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
   let default = (Cudf.default_package, Cudf.default_package, Other [])
 end
 

@@ -541,7 +541,7 @@ let test_depsolver =
 
 module PKGTUPLE = struct
   type t = Cudf.package * Cudf.package
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
   let pp_printer fmt (p,q) =
     Format.fprintf fmt "%s -> %s" 
       (CudfAdd.string_of_package p)

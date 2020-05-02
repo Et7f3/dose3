@@ -26,7 +26,7 @@ type cfl_type = Explicit | Conjunctive | Other of Diagnostic.reason_int list;;
 
 module CflE = struct
   type t = int * int * cfl_type
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
   let default = (0, 0, Other []) 
 end
 
@@ -43,7 +43,7 @@ let sctimer = Util.Timer.create "Strongconflicts_int.main";;
 
 (* open Depsolver_int *)
 
-module S = Set.Make (struct type t = int let compare = Pervasives.compare end)
+module S = Set.Make (struct type t = int let compare = Stdlib.compare end)
 
 let swap (p,q) = (min p q, max p q) ;;
 let to_set l = List.fold_right S.add l S.empty ;;

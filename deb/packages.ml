@@ -194,7 +194,7 @@ let parse_packages_in ?filter ?(archs=[]) ?(extras=[]) fname ic =
     fatal "Filename %s\n %s\n %s : %s" fname (String.concat "\n " cl) field errmsg
 
 let id p = (p#name,p#version,p#architecture)
-let (>%) p1 p2 = Pervasives.compare (id p1) (id p2)
+let (>%) p1 p2 = Stdlib.compare (id p1) (id p2)
 module Set = struct
   include Set.Make(struct
     type t = package

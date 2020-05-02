@@ -86,7 +86,7 @@ let epochcmp e1 e2 =
   |(None,None)|(None,Some 0)|(Some 0,None) -> 0
   |(None,Some _) -> -1
   |(Some _,None) -> 1
-  |(Some x,Some y) -> Pervasives.compare x y
+  |(Some x,Some y) -> Stdlib.compare x y
 ;;
 
 let relcmp r1 r2 = 

@@ -108,7 +108,7 @@ let parse_version version =
 
 (*Compare  two elements of the prerelease part of a version*)
 let compare_pre = function
-  | (N x1, N y1) -> Pervasives.compare x1 y1
+  | (N x1, N y1) -> Stdlib.compare x1 y1
   | (S _, N _)   -> 1
   | (N _, S _)   -> -1
   | (S s1, S s2) -> String.compare s1 s2
@@ -135,13 +135,13 @@ let compare_pre (l1,l2) =
 
 let compare_version x y =
   let res x = if x = 0 then 0 else if x < 0 then -1 else 1 in
-  let c1 = Pervasives.compare x.major y.major in
+  let c1 = Stdlib.compare x.major y.major in
   if c1 <> 0 then res c1
   else
-    let c2 = Pervasives.compare x.minor y.minor in
+    let c2 = Stdlib.compare x.minor y.minor in
     if c2 <> 0 then res c2
   else
-    let c3 = Pervasives.compare x.patch y.patch in
+    let c3 = Stdlib.compare x.patch y.patch in
     if c3 <> 0 then res c3
   else
     compare_pre (x.pre,y.pre)

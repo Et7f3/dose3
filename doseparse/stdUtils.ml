@@ -91,12 +91,12 @@ let if_application ?(alternatives=[]) filename main =
     try (if main () = 0 then exit(0) else exit(1)) with
       |Unix.Unix_error(err, _, arg) -> begin
           Printf.eprintf "%s %s" (Unix.error_message err) arg;
-          Pervasives.exit(64) end
+          Stdlib.exit(64) end
       |exn -> begin
           Printexc.print_backtrace stderr; 
           Printf.eprintf "The applications raised this exception : ";
           Printf.eprintf "%s\n" (Printexc.to_string exn);
-          Pervasives.exit(64) end
+          Stdlib.exit(64) end
   else begin
     Printf.eprintf "you are using %s as a module and not as an executable\n" Sys.argv.(0);
     Printf.eprintf "%s can be run as an exactable if named : %s\n" Sys.argv.(0) 

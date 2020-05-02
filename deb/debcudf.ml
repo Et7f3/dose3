@@ -14,7 +14,7 @@
 
 module SSet = Set.Make(struct
   type t = string * Pef.Packages_types.constr option
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end)
 module OcamlHashtbl = Hashtbl
 

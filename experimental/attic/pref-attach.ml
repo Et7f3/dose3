@@ -28,7 +28,7 @@ let options =
 
 module V = struct
   type t = int
-  let compare (l1:t) (l2:t) = Pervasives.compare l1 l2
+  let compare (l1:t) (l2:t) = Stdlib.compare l1 l2
   let hash (l:t) = Hashtbl.hash l
   let equal (l1:t) (l2:t) = (l1 = l2)
 end

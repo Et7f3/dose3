@@ -92,7 +92,7 @@ module SyntacticDependencyGraph = struct
       |Or i1, Or i2 -> (i1 - i2)
       |Pkg {value = p1}, Pkg {value = p2} -> CudfAdd.compare p1 p2
       |Set s1, Set s2 -> CudfAdd.Cudf_set.compare s1 s2
-      |_, _ -> Pervasives.compare x y (* XXX *)
+      |_, _ -> Stdlib.compare x y (* XXX *)
     let hash = function
       |Pkg {value} -> CudfAdd.hash value 
       |Set s -> Hashtbl.hash s (* XXX Can fail ! *)
@@ -115,7 +115,7 @@ module SyntacticDependencyGraph = struct
       |Condensed
     type t = s ref
 
-    let compare x y = Pervasives.compare !x !y
+    let compare x y = Stdlib.compare !x !y
     let hash x = Hashtbl.hash !x
     let equal x y = ((compare x y) = 0)
     let default = ref (Conflict ("",None))
@@ -318,7 +318,7 @@ module ActionGraph = struct
     let compare x y = match x,y with
       |Install p1, Install p2 -> CudfAdd.compare p1 p2
       |Remove p1, Remove p2 -> CudfAdd.compare p1 p2
-      |x,y -> Pervasives.compare x y
+      |x,y -> Stdlib.compare x y
 
     let hash = function
       |Install p -> Hashtbl.hash (1,p.Cudf.package,p.Cudf.version)
@@ -720,7 +720,7 @@ module IntPkgGraph = struct
 
   module PkgV = struct
     type t = int
-    let compare = Pervasives.compare
+    let compare = Stdlib.compare
     let hash i = i
     let equal = (=)
   end
