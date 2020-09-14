@@ -1,0 +1,20 @@
+(library
+ (name algo)
+ (modules
+ Diagnostic
+Depsolver_int
+Depsolver
+Flatten
+Defaultgraphs
+Statistics
+Dominators
+Strongdeps
+Strongconflicts_int
+Strongconflicts
+)
+ (public_name dose3.algo)
+  (preprocess
+  (action
+   (run %{bin:cppo} -D "OCAMLGRAPHVERSION 188" -D WITH_BYTES -V
+     OCAML:%{ocaml_version} %{input-file})))
+ (libraries cudf common ocamlgraph))

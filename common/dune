@@ -1,0 +1,18 @@
+(library
+ (name common)
+ (public_name dose3.common)
+  (preprocess
+  (action
+   (run %{bin:cppo} -D "OCAMLGRAPHVERSION 188" -D WITH_BYTES -V
+     OCAML:%{ocaml_version} %{input-file})))
+ (modules Format822_lexer Format822_parser Format822 EdosSolver CudfSolver Input Util CudfAdd CudfDiff VersionInfo Url Criteria_types Criteria_lexer Criteria_parser Criteria Shell_lexer)
+ (flags -unsafe-string)
+ (libraries cudf re.pcre))
+
+(rule
+ (target versionInfo.ml)
+ (deps versionInfo.ml.in)
+ (action (copy versionInfo.ml.in  versionInfo.ml)))
+
+(ocamllex format822_lexer criteria_lexer shell_lexer)
+(ocamlyacc format822_parser criteria_parser)
